@@ -1,0 +1,18 @@
+# Documentos internos
+PROMPT_*.md
+
+#Credenciais e configuracoes privadas
+.env
+.env.*
+!.env.example
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# React
+node_modules/
+
+# Editor
+.vscode/
