@@ -1,148 +1,107 @@
 # Plano de Estudos e Dicas | AI Request Classifier
 
-**Versão:** 2.6
+**Versão:** 3.17  
+**Atualização:** 13/10/2026  
+**Responsável:** desenvolvedor do AI Request Classifier  
+**Estado:** P01 a P04 concluídas; P05 não iniciada. Commit da P04 pendente.
 
-**Data de atualização:** 12/10/2026
+## Objetivo
 
-**Situação:** P01 em estudo. Três arquivos foram adicionados ao staging, mas o primeiro commit ainda não foi executado. A última verificação encontrou três linhas com espaços finais no guia; correção e nova verificação pendentes. Privacidade do GitHub e primeiro `push` não confirmados.
+Construir incrementalmente uma aplicação para triagem de solicitações internas. O funcionário cadastra uma solicitação; o backend registra e **aciona automaticamente a IA** para sugerir categoria, prioridade e justificativa. O analista visualiza as sugestões no pipeline React e pode aceitar ou corrigir. A classificação não equivale à resolução do chamado.
 
-## O que estamos construindo
-
-Aplicação demonstrativa para organizar solicitações internas de uma empresa. O funcionário registra o título e a descrição; o backend salva os dados e **aciona automaticamente um modelo de IA** para sugerir categoria, prioridade e justificativa. O analista recebe a sugestão no pipeline do frontend e **aceita ou corrige**. A decisão final é registrada no banco.
-
-**Tecnologias planejadas:** Python e FastAPI no backend, PostgreSQL para persistência, React no frontend, API de modelo de IA para classificação, Git e GitHub desde o início. O uso dessas tecnologias é planejado, não evidência de implementação.
-
-### Fluxo de negócio e arquitetura, no mesmo diagrama
+## Arquitetura pretendida e processo empresarial
 
 ```mermaid
 flowchart TD
-    A["Funcionário informa título e descrição<br/>React: formulário"]
-    B["Frontend envia solicitação<br/>HTTP POST /solicitacoes, JSON"]
-    C["Backend valida e registra<br/>FastAPI + PostgreSQL<br/>estado: em_classificacao"]
-    D["Classificação automática<br/>FastAPI chama serviço de IA"]
-    E{"Resposta válida?"}
-    F["Persistir sugestão no PostgreSQL<br/>estado: aguardando_revisao"]
-    G["Analista vê sugestão no pipeline<br/>React consulta API: GET"]
-    H["Analista aceita ou corrige<br/>React envia decisão por HTTP"]
-    I["FastAPI valida e salva decisão<br/>PostgreSQL: classificada"]
-    J["Registrar falha sem perder solicitação<br/>estado: falha_ia<br/>tratamento manual ou nova tentativa"]
+    A["Funcionário cadastra solicitação<br/>React: formulário"]
+    B["React envia HTTP POST<br/>JSON para FastAPI"]
+    C["Python/FastAPI valida<br/>e registra no PostgreSQL"]
+    D["Backend chama IA automaticamente<br/>categoria, prioridade, justificativa"]
+    E{"Sugestão válida?"}
+    F["PostgreSQL armazena sugestão<br/>status: aguardando revisão"]
+    G["Analista vê no pipeline React<br/>GET na API"]
+    H["Analista aceita ou corrige<br/>API registra decisão no PostgreSQL"]
+    I["Falha da IA<br/>salvar estado para tratamento humano"]
     A --> B --> C --> D --> E
-    E -->|Sim| F --> G --> H --> I
-    E -->|Não| J
+    E -->|Sim| F --> G --> H
+    E -->|Não| I
 ```
 
-O diagrama é **planejamento**, não funcionalidade pronta. A classificação automática não implica decisão automática nem resolução do chamado. Um atendimento pode continuar aberto depois de classificado. Não presumir melhora de tempo, SLA, acurácia ou aprendizado contínuo sem testes e medições.
+**Atenção:** o diagrama representa a **arquitetura planejada**, não uma funcionalidade pronta. Até a P04, há apenas exercícios locais de Python; FastAPI, PostgreSQL, modelo de IA e React ainda não foram implementados.
 
-## Como estudar e desenvolver
+## Método de trabalho
 
-- Avançar uma etapa por vez, com explicações curtas: objetivo, motivo técnico, exemplo, prática e validação.
-- Digitar e executar pessoalmente o backend Python, comandos Git, testes e operações de publicação. O frontend React pode receber apoio de IA, mantendo a compreensão das integrações.
-- Trabalhar em rodadas de 3 a 5 ações; explicar erros e revisar resultados antes de seguir. Nenhum passo futuro é presumido concluído.
-- Usar um **diagrama integrado** para cada fluxo relevante, mostrando juntos o processo empresarial e a implementação técnica.
-- Anotar em papel: objetivo, conceito, fluxo, comandos, resultado observado, erro e explicação própria.
-- Usar dados fictícios; não publicar senhas, tokens, dados de terceiros ou configurações privadas. **Repositórios privados também exigem proteção de segredos.**
-- Manter o **repositório GitHub privado** durante o desenvolvimento, por decisão de 12/10/2026. A URL foi fornecida, mas a visibilidade deve ser conferida no GitHub. Torná-lo público somente quando o MVP estiver pronto, com revisão de conteúdo e histórico Git e aprovação explícita. Não criar recursos com cobrança nem fazer deploy sem autorização.
+O desenvolvedor digita e executa o código do backend, verifica resultados e explica os conceitos com suas palavras. Orientação em ciclos de 3 a 5 passos, explicações curtas, exercícios pequenos e revisão antes de avançar de aula. O frontend poderá ser construído com assistência de IA, sem ocultar a comunicação com o backend.
 
-**Identidade no projeto:** o responsável pelo AI Request Classifier é o **desenvolvedor**. Este guia documenta sua aprendizagem aplicada e o desenvolvimento autoral do sistema; apresenta o trabalho como desenvolvimento autoral e aprendizagem aplicada.
+Para cada fluxo, preferir **um único diagrama integrado**, com o evento empresarial, componente técnico, dados enviados, estado e retorno. Evitar excesso de teoria e repetição.
 
-## Trilha prática ativa
+## Trilha prática
 
-Legenda: `[ ]` ainda não concluída. Estados: **não iniciada**, **em estudo**, **em revisão**, **concluída após validação**. Uma etapa apresentada não é uma etapa concluída.
+- [ ] **P00:** problema empresarial e arquitetura. Apresentada; avaliação formal não realizada e avanço autorizado.
+- [x] **P01:** estrutura, Git e GitHub, `.gitignore`, README e documentação. Concluída por evidências e confirmações.
+- [x] **P02:** Python 3.14.7, ambiente `.venv`, primeiro script, variáveis e `print()`. Concluída.
+- [x] **P03:** `str`, `int`, `bool`, dados de solicitações e atribuição. Concluída.
+- [x] **P04:** `if/else`, `in`, `lower()`, funções `def`, parâmetros e `return`. **Concluída em 13/10/2026.**
+- [ ] **P05:** HTTP, JSON, requisições e respostas.
+- [ ] **P06:** FastAPI e primeiro endpoint.
+- [ ] **P07:** receber dados por POST e validar.
+- [ ] **P08:** CRUD de solicitações em memória.
+- [ ] **P09:** organização de arquivos, commits e documentação técnica.
+- [ ] **P10:** PostgreSQL e SQL aplicados.
+- [ ] **P11:** persistência e consultas parametrizadas.
+- [ ] **P12:** categorias, prioridades e exemplos de avaliação.
+- [ ] **P13:** API de IA, prompts, dados enviados, segurança e custos.
+- [ ] **P14:** classificação automática e tratamento de falhas.
+- [ ] **P15:** pipeline de revisão humana.
+- [ ] **P16:** interface React.
+- [ ] **P17:** integração completa cadastro -> IA -> revisão.
+- [ ] **P18:** testes, qualidade e segurança.
+- [ ] **P19:** documentação final, demonstração e revisão técnica.
+- [ ] **P20:** eventual publicação, após autorização.
 
-### Fase A | Início e Python aplicado
+## Evidências de progresso e Git
 
-- [ ] **P00:** Problema empresarial, arquitetura e fluxo; **apresentada, sem avaliação formal; avanço autorizado**.
-- [ ] **P01:** Estrutura local, Git e GitHub desde o início, README, guia e primeiro commit; **em estudo**.
-- [ ] **P02:** Verificar Python, ambiente virtual e executar o primeiro arquivo.
-- [ ] **P03:** Representar solicitações com strings, variáveis e saídas.
-- [ ] **P04:** Classificação inicial por regras simples, condições, funções e testes manuais.
+| Etapa | Resultado confirmado | Git |
+|---|---|---|
+| P01 | Repositório inicializado, documentação e `.gitignore` configurados | Primeiro commit `a38d48c`, push confirmado |
+| P02 | Execução do Python e ambiente virtual confirmados pelo desenvolvedor | Sem commit específico informado |
+| P03 | Três respostas corretas e `main.py` executado | Commit `a63e068`; push confirmado por relato |
+| P04 | `if/else` e função `sugerir_categoria(titulo)` compreendidos; duas execuções confirmadas por relato (`Suporte de TI` e `Outros`) | **Commit e push pendentes** |
 
-### Fase B | Primeira API
+A regra de `sugerir_categoria(titulo)` é um exercício **determinístico** de palavra-chave e **não é classificação por IA**. Ela não contempla prioridade nem revisão humana. Estas funcionalidades serão implementadas em etapas posteriores.
 
-- [ ] **P05:** HTTP, JSON, requisição, resposta e papel do FastAPI.
-- [ ] **P06:** Primeiro endpoint e servidor local.
-- [ ] **P07:** Receber dados via POST e validá-los.
-- [ ] **P08:** CRUD simples de solicitações em memória.
+**Repositório:** [ai-request-classifier](https://github.com/waldirevora/ai-request-classifier). Decisão do desenvolvedor: manter privado até o MVP estar pronto e a revisão de segurança autorizar a mudança. A visibilidade não foi verificada independentemente pelo orientador.
 
-### Fase C | Organização e banco de dados
+## Git: boas práticas e mensagens
 
-- [ ] **P09:** Consolidar commits, documentação e organização do código.
-- [ ] **P10:** PostgreSQL e SQL aplicados a solicitações.
-- [ ] **P11:** Persistência real, conexão, consultas seguras e erros.
+- Antes de um commit, executar `git status --short` e revisar `git diff` e os arquivos escolhidos para staging.
+- Fazer staging seletivo e conferir com `git diff --cached --check` e `git diff --cached --stat`.
+- Mensagens em português com prefixos `feat:`, `fix:`, `docs:`, `test:` e `refactor:`.
+- Após criar o commit, conferir `git log -1 --oneline` e `git status`.
+- Fazer push para o GitHub privado somente após validar o conteúdo do commit.
+- Nunca publicar `.env`, credenciais, `.venv/` nem documentos internos. Antes de tornar o repositório público, revisar todo o histórico, não só os arquivos atuais.
 
-### Fase D | IA e revisão humana
+**Próximo commit sugerido:** `feat: adiciona funcao de classificacao provisoria`, após inspeção de `backend/app/main.py`. Este guia atualizado pode receber um commit de documentação separado (`docs: atualiza progresso ate P04`).
 
-- [ ] **P12:** Categorias, prioridades e casos de avaliação.
-- [ ] **P13:** APIs de IA, prompts, tokens, latência, privacidade e custo.
-- [ ] **P14:** IA acionada automaticamente após o cadastro, validação de saída e recuperação de falhas.
-- [ ] **P15:** Pipeline de revisão humana: aceitar/corrigir e registrar decisões.
+## Dicas de desenvolvimento e anotações
 
-### Fase E | React, testes e demonstração
+Anotar para cada etapa: objetivo, ideia principal, conceitos/símbolos, diagrama negócio + técnica, comandos/código escritos, saída observada, erro/correção, decisão e dúvida.
 
-- [ ] **P16:** Interface React com apoio de IA e comunicação com o backend.
-- [ ] **P17:** Integração do ciclo cadastro -> IA -> revisão -> registro.
-- [ ] **P18:** Testes automatizados, qualidade e segurança básica.
-- [ ] **P19:** Documentação da arquitetura real e demonstração local.
-- [ ] **P20:** Publicação opcional, após MVP validado, revisão de segurança e autorização.
+Práticas recomendadas: prever resultados antes de executar, modificar um caso de cada vez, descrever com suas próprias palavras por que o programa produziu a saída e revisar conceitos sem consultar o código. Avançar conforme a compreensão real, não pelo volume de linhas.
 
-*A trilha original de 46 aulas do Prompt Mestre V2 foi substituída por esta sequência prática por decisão posterior do desenvolvedor. Fundamentos serão ensinados no momento em que forem necessários.*
+## Estado técnico conhecido
 
-## Registro de progresso
+- Windows, VS Code, PowerShell e Python 3.14.7.
+- `backend/app/main.py`: exercícios locais em Python, com código da P04 confirmado como executado pelo desenvolvedor; conteúdo não inspecionado remotamente.
+- `backend/.venv/`: ambiente criado e validado pelo desenvolvedor, ignorado pelo Git.
+- FastAPI, PostgreSQL, IA, React e testes automatizados: **não iniciados**.
 
-| Etapa | Estado | Evidência resumida | Próxima validação |
-|---|---|---|---|
-| P00 | Apresentada, sem validação formal | Problema de negócio e arquitetura discutidos; início da P01 autorizado | Relembrar conceitos quando necessário |
-| P01 | Em estudo | Windows/VS Code; Git local na branch `master`; `.gitignore` validado; README conferido em UTF-8. `git add .` preparou exatamente três arquivos: `.gitignore`, `README.md`, `docs/PLANO_DE_ESTUDOS_E_DICAS.md`. `git diff --cached --stat` indicou 197 inserções; `git diff --cached --check` apontou espaços finais nas linhas 3, 4 e 94 do guia. | Corrigir os espaços e o status desatualizado, re-adicionar somente o guia, verificar o staging e confirmar Private antes de qualquer push |
-| P02 a P20 | Não iniciadas | Nenhuma execução confirmada | Avançar após validação da P01 |
+## Próxima etapa
 
-**GitHub:** URL fornecida pelo desenvolvedor: `https://github.com/waldirevora/ai-request-classifier.git`. O staging local dos três arquivos foi comprovado em 12/10/2026, mas o guia preparado para esse staging tinha uma frase de progresso desatualizada. Privacidade efetiva, estado remoto, primeiro commit, configuração de `remote` e `push` **não foram confirmados**.
-
-**Funcionalidades:** nenhuma API, integração IA, frontend ou banco implementado e testado até esta atualização.
-
-## Política de visibilidade no GitHub
-
-- **Durante o curso:** manter repositório privado e verificar a indicação **Private** na interface antes de enviar código. URL informada: `https://github.com/waldirevora/ai-request-classifier.git`. Conferir se o remoto foi criado sem README/.gitignore/licença automáticos.
-- **Quando o MVP estiver pronto:** revisar arquivos públicos, segredos, variáveis de ambiente, dados fictícios, documentação, testes e **todo o histórico de commits**; solicitar confirmação antes de mudar para público.
-- **Estado:** decisão de privacidade e URL confirmadas pelo desenvolvedor; visibilidade real do remoto e primeiro `push` não confirmados.
-
-## Dicas práticas
-
-1. Antes de olhar a resposta, tente prever o resultado de um comando ou trecho de código.
-2. Explique cada linha com suas palavras e altere apenas um detalhe por teste.
-3. Anote o texto essencial dos erros e como a correção foi validada.
-4. Faça commits pequenos, com mensagens que descrevam alterações reais.
-5. Diferencie **planejado**, **executado**, **testado** e **publicado**.
-6. Revise conteúdos anteriores em intervalos curtos, conforme sua dificuldade.
-7. Só marque uma etapa concluída quando conseguir explicar seu propósito e reproduzir a prática principal.
-
-## Estrutura planejada de referência
-
-```text
-ai-request-classifier/
-├── README.md
-├── .gitignore
-├── docs/
-│   ├── PLANO_DE_ESTUDOS_E_DICAS.md
-│   └── ARQUITETURA.md                 (futuro)
-├── backend/
-│   └── app/                          (futuro)
-└── frontend/                         (futuro)
-```
-
-Pastas e arquivos marcados como futuros não devem ser criados antecipadamente apenas para coincidir com o desenho. O Git não rastreia diretórios vazios.
-
-## Critério de conclusão de cada etapa
-
-- [ ] Executei ou demonstrei a prática pessoalmente.
-- [ ] Consegui explicar o que aconteceu e por quê.
-- [ ] Conferi os resultados ou testes e corrigi os erros relevantes.
-- [ ] Registrei o progresso com evidência verdadeira.
-- [ ] Autorizei o avanço à etapa seguinte.
+**Primeiro:** revisar alterações da P04 e criar o commit/push correspondente. **Depois:** iniciar P05 (HTTP e JSON) somente quando o desenvolvedor autorizar. O guia deve ser atualizado e versionado conforme o progresso, sem presumir sincronização automática com os arquivos locais.
 
 ## Referências
 
 - [README do projeto](../README.md)
 - [Documentação oficial do Python](https://docs.python.org/pt-br/3/)
 - [Documentação oficial do Git](https://git-scm.com/docs)
-
-As fontes oficiais são referências de consulta, não conteúdo declarado como estudado. O guia será atualizado ao final de cada etapa validada e sempre que uma decisão relevante mudar.
