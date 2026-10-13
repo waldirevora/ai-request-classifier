@@ -7,3 +7,14 @@ print("ID:", id_solicitacao)
 print("Titulo:", titulo)
 print("Descrição:", descricao)
 print("Classificada:", classificada)
+
+
+def sugerir_categoria(titulo):
+    if "computador" in titulo.lower():
+        return "Suporte de TI"
+    else:
+        return "Outros"
+
+
+categoria = sugerir_categoria(titulo)
+print("Categoria provisória:", categoria)
