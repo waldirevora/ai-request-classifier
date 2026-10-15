@@ -34,3 +34,23 @@ Consulte [Plano de Estudos e Dicas](docs/PLANO_DE_ESTUDOS_E_DICAS.md).
 ## Desenvolvimento
 
 Projeto desenvolvido incrementalmente, com implementação manual do backend, testes e documentação das decisões técnicas.
+
+## Execução local
+
+Na pasta backend:
+
+1. Instalar dependências de desenvolvimento:
+
+   python -m pip install -r requirements-dev.txt
+
+2. Iniciar API:
+
+   python -m uvicorn app.main:app --reload
+
+3. Abrir documentação:
+
+   http://127.0.0.1:8000/docs
+
+4. Executar testes:
+
+   python -m pytest -q
