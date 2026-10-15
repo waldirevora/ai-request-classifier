@@ -1,9 +1,9 @@
 # Plano de Estudos e Dicas | AI Request Classifier
 
-**Versão:** 3.42
+**Versão:** 3.45
 **Atualização:** 15/10/2026
 **Responsável:** desenvolvedor do AI Request Classifier
-**Estado:** **P01 a P09 concluídas.** **P10 em andamento:** PostgreSQL 18.6 Windows `127.0.0.1:5433`, banco, tabela, operações SQL, restrições, transações e persistência demonstrados em logs. Teste isolado de título e cinco testes `pytest` aprovados por confirmação do desenvolvedor. Exercícios A–F validados após confirmação das correções de A e F; documentação README/ARQUITETURA ainda não atualizada conforme o desenvolvedor; Git P10 pendente. **P11 não iniciada.**
+**Estado:** **P01 a P10 concluídas** com commit/push P10 informados pelo desenvolvedor (hash não fornecido). **P11 em estudo; compreensão A–G aprovada (7/7), execução prática ainda não confirmada**: integração FastAPI ↔ PostgreSQL por `psycopg`, configuração local via `.env` ignorado pelo Git, SQL parametrizado, transações, CRUD persistente e testes automatizados em banco isolado. Decisão de publicação: manter repositório privado até conclusão da P11 e auditoria de segurança/README, sujeita à decisão explícita do desenvolvedor.
 
 ## Objetivo do produto
 
@@ -49,8 +49,8 @@ flowchart TD
 - [x] **P07:** `POST /solicitacoes`, Pydantic, `201`/`422`, lista em memória; **commit e push informados como concluídos**.
 - [x] **P08:** GET lista/detalhe, PUT, DELETE, erros 404/422, resposta 204 e IDs crescentes; 5/5 respostas e testes confirmados; commit/push informados.
 - [x] **P09: concluída em 15/10/2026.** Estrutura modular, pytest/TestClient (cinco testes aprovados sem avisos após `httpx2`), Swagger/endpoints confirmados, documentação e Git versionados, **6/6 respostas conceituais corretas**.
-- [ ] **P10: em estudo (15/10/2026).** Banco/tabela, restrições, SQL, transações, persistência e reteste confirmados; exercícios A–F aprovados; documentação e versionamento pendentes.
-- [ ] **P11:** persistência e consultas parametrizadas.
+- [x] **P10: concluída em 15/10/2026.** PostgreSQL 18.6 Windows, banco/tabela, SQL, transações, persistência, reteste, exercícios A–F, documentação e commit/push confirmados; hash final não informado.
+- [ ] **P11: em estudo (iniciada em 15/10/2026).** FastAPI ↔ PostgreSQL, psycopg, .env, SQL parametrizado, CRUD persistente e testes isolados; implementação e avaliação pendentes.
 - [ ] **P12:** categorias, prioridades e exemplos de avaliação.
 - [ ] **P13:** API de IA, instruções, custo, latência e privacidade.
 - [ ] **P14:** classificação automática e tratamento de falhas.
@@ -154,7 +154,7 @@ Registrar objetivo da refatoração, responsabilidades de `main.py`/`schemas.py`
 O desenvolvedor confirmou explicitamente: (1) após trocar `httpx` por `httpx2`, `pytest -q` passou **sem avisos**; (2) todos os endpoints continuaram funcionando em `http://127.0.0.1:8000/docs`. Somam-se os cinco testes previamente evidenciados, as seis respostas corretas, o README e a documentação de arquitetura e o Git sincronizado com `origin/main` após o commit `e1ed02a`. **P09 concluída.** PostgreSQL, IA e frontend ainda não foram implementados. O ajuste de dependência é confirmado como executado, mas seu versionamento após o último status limpo não foi evidenciado; conferir `git status -sb` na retomada. **P10 aguarda autorização.**
 
 
-## P10 em estudo | PostgreSQL e fundamentos de SQL (iniciada em 15/10/2026)
+## P10 | PostgreSQL e fundamentos de SQL (concluída em 15/10/2026)
 
 **Escopo:** instalar/verificar PostgreSQL local no Windows, acessar por `psql` (ou interface SQL equivalente), criar banco `ai_request_classifier` e tabela `solicitacoes` via SQL versionado, praticar `INSERT`, `SELECT`, `UPDATE`, `DELETE`, transações e comprovar persistência após reconectar. **Não integrar FastAPI ainda; P11 fará a persistência da API.** Não afirmar banco instalado nem testes concluídos antes dos resultados fornecidos.
 
@@ -288,3 +288,57 @@ O desenvolvedor respondeu **"todos os testes ok"** à solicitação de testar **
 - Sincronizar opcionalmente este plano público na cópia local após revisão, sem versionar prompt privado.
 
 **Conclusão pendente:** após editar, revisar `git status -sb`, `git diff --check`, `git diff` e staging seletivo de `backend/sql/001_create_solicitacoes.sql`, `README.md`, `docs/ARQUITETURA.md` e plano público se sincronizado; orientar commit `feat(db): adiciona esquema SQL inicial de solicitacoes`, push e verificação `git status -sb`. A P10 está em finalização, não encerrada. A P11 não foi iniciada e depende de autorização.
+
+
+## Registro de conclusão da P10 | v3.43 (15/10/2026)
+
+**P10 concluída** após testes, exercícios, revisão de documentação e confirmação de commit/push pelo desenvolvedor. Anotações anteriores com «pendente» representam o estado em versões anteriores do acompanhamento.
+
+| Critério | Evidência |
+|---|---|
+| PostgreSQL local | PostgreSQL 18.6 Windows, porta 5433, banco `ai_request_classifier`, acesso pelo `psql` comprovados em logs |
+| Esquema SQL | `CREATE TABLE`, `\dt` e `\d solicitacoes` mostraram cinco colunas, IDENTITY, PRIMARY KEY, NOT NULL, DEFAULT e CHECK |
+| Operações SQL | `INSERT`, `SELECT`, `UPDATE`, `DELETE`, restrições e `ROLLBACK` demonstrados |
+| Persistência | Registro ID 1 permaneceu após fechar e reabrir `psql` |
+| Complementos | Teste isolado de título e `pytest` com cinco testes aprovados, conforme confirmação do desenvolvedor |
+| Compreensão | A–F aprovadas; `psql` executa SQL, e a P11 modificará a camada de dados sem criar novas rotas |
+| Documentação e Git | README, `docs/ARQUITETURA.md`, plano público e script `backend/sql/001_create_solicitacoes.sql` revisados para staging; commit/push confirmados pelo desenvolvedor, **sem hash nem log final para conferência independente** |
+
+**Estado técnico pós-P10:** PostgreSQL operacional, mas API FastAPI ainda depende da lista Python em RAM. O banco foi acessado diretamente pelo `psql`; integração automática API → PostgreSQL ainda não existe. Não existem frontend React, integração de IA ou pipeline de revisão funcionais.
+
+**P11, próxima aula (não iniciada):** conexão segura com driver PostgreSQL no Python, SQL parametrizado, operações CRUD persistidas, tratamento de erros, transações e testes de regressão. Usar a instância Windows na porta 5433 salvo nova decisão explícita; não registrar segredos. Apresentar a aula completa somente quando o desenvolvedor autorizar.
+
+
+## P11 iniciada em 15/10/2026 | Integração FastAPI → PostgreSQL
+
+**Objetivo empresarial:** a mesma API de solicitações mantém dados após reinício e prepara cadastro persistente para futura classificação automática. **Não** acionar IA na P11; status inicial continua `pendente_classificacao`. A conexão é interna ao backend; nenhuma rota `/banco` é necessária.
+
+**Arquitetura integrada:** futuramente funcionário → React → HTTP JSON POST → FastAPI/Pydantic → `routes/solicitacoes.py` → `database.py`/psycopg → SQL parametrizado → PostgreSQL 18.6 Windows `127.0.0.1:5433`, base `ai_request_classifier` → resposta HTTP JSON. Durante a aula, usar Swagger ou TestClient, sem frontend React. Banco de testes **separado** `ai_request_classifier_test` (mesma tabela); testes jamais devem limpar o banco de desenvolvimento.
+
+**Ambiente confirmado antes da P11:** PostgreSQL 18.6 Windows na porta 5433, banco e tabela (`backend/sql/001_create_solicitacoes.sql`) funcionando, INSERT/SELECT/UPDATE/DELETE, `CHECK`, `NOT NULL`, transações e reconexão confirmadas; API CRUD ainda em memória (`storage.py`). PostgreSQL Docker na porta 5432 não deve ser alterado.
+
+**Plano de implementação:**
+
+1. Revisar `git status -sb`; proteger segredos; conferir `.gitignore`; criar `backend/.env.example` sem senha real e `backend/.env` local ignorado, com PGHOST, PGPORT, PGDATABASE, PGUSER, PGPASSWORD. Para P11 local usar `postgres` somente didaticamente; migrar para usuário de privilégios mínimos antes de produção. Não expor senha em prints, commits ou documentação.
+2. Acrescentar `psycopg[binary]` e `python-dotenv` ao `backend/requirements.txt`; instalar no `.venv` e conferir `pip show`; manter `requirements-dev.txt` com pytest e httpx2.
+3. Criar `backend/app/database.py` que carrega `backend/.env` e expõe `conectar()`, usando `psycopg.connect(..., row_factory=dict_row)`. Usar contexto `with conectar() as conn` para confirmação automática em sucesso e rollback em exceção. Não construir SQL com interpolação de strings.
+4. Substituir o uso de `app.storage` nos handlers em `backend/app/routes/solicitacoes.py` por SQL parametrizado com `%s`: INSERT ... RETURNING; SELECT lista ordenada e detalhe com WHERE; UPDATE ... RETURNING; DELETE ... RETURNING. Usar `HTTPException(404)` quando `fetchone()` retorna `None`; conservar status HTTP 201, 200, 204, 404, 422. A coluna `criado_em` adiciona informação na resposta, não quebra os testes se verificarem apenas os campos do contrato antigo.
+5. Opcionalmente alinhar Pydantic com `btrim` SQL: `field_validator` em modo `before` para remover espaços laterais; manter limites do Field. Garantir 422 para entrada inválida.
+6. Criar banco **exclusivo para testes** `ai_request_classifier_test` via psql na porta 5433 e aplicar mesmo arquivo SQL. Refatorar `backend/tests/test_api.py`: fixture `monkeypatch.setenv('PGDATABASE','ai_request_classifier_test')`, conferir nome real via conexão e `TRUNCATE TABLE solicitacoes RESTART IDENTITY` apenas **no banco de testes** antes de cada função; manter 5 testes de saúde, criação/listagem/consulta, 404/422, PUT/DELETE, IDs. Verificar que a limpeza jamais acessa a base normal.
+7. Smoke-test `/docs`, cadastro→reiniciar Uvicorn→consultar registro, e conferir via `psql -p 5433` a mesma linha. Execução de `pytest -q` após configuração do banco de testes deve resultar em cinco testes aprovados. Atualizar README/ARQUITETURA com execução, limites, segurança e banco de testes; ainda não existe IA ou React.
+8. Revisar Git (`git status`, `git diff`, `git diff --check`, `git add` seletivo, `git diff --cached --check`, `git check-ignore backend/.env`); commit proposto após validação: `feat(db): integra FastAPI ao PostgreSQL com SQL parametrizado`. Push após conferência. Não iniciar P12 sem autorização.
+
+**Critérios de aprovação:** todos CRUD respondem com semântica anterior; IDs gerados pelo PostgreSQL; banco não perde registros após reiniciar aplicação; SQL usa parâmetros `%s`; transações confirmadas corretamente; cinco testes automatizados em banco separado; privacidade das credenciais; documentação atualizada e respostas de compreensão corretas. **Ainda não executado nem concluído.**
+
+**Decisão de publicação:** após concluir P11, auditar o repositório e seu histórico quanto a segredos, dados pessoais, `.env`, README e licença. Publicar somente com aprovação explícita; não mudar visibilidade agora.
+
+
+## P11 | Compreensão validada — v3.45 (15/10/2026)
+
+**Exercícios A–G: 7/7 aprovados.** Desenvolvedor explicou corretamente o papel do driver `psycopg`; parâmetros `%s` e SQL Injection; commit automático ao sair normalmente de `with conectar() as conn`; persistência PostgreSQL independente do Uvicorn; banco de testes `ai_request_classifier_test` separado, limpo entre testes; `.env` com configurações locais/segredos e `.env.example` sem segredos; e ausência atual de classificação automática por IA.
+
+**Precisões:** `%s` recebe valores, não nomes de campos SQL; saída por exceção do contexto de conexão provoca rollback; integração futura com IA exige acionamento automático pelo backend, validação/persistência da sugestão e revisão humana.
+
+**P11 continua em estudo:** ainda não há confirmação do `pytest -q` em banco de testes, CRUD com psycopg, persistência após reiniciar Uvicorn, credenciais efetivamente ignoradas pelo Git, documentação revisada ou versionamento da P11. Não confundir compreensão correta com implementação validada. O `psql` pode exigir ajuste PATH em nova sessão Windows; instância escolhida é PostgreSQL 18.6 Windows em `127.0.0.1:5433`.
+
+**Próximos critérios:** verificar `backend/.env` ignorado e `.env.example` sem senha; conexão Python, bancos principal/de testes separados; HTTP 201/200/204/404/422; cinco testes pytest; persistência após reinício; README/ARQUITETURA; revisão de staging/commit/push. Depois da P11, auditoria antes de eventual publicação pública; P12 depende de autorização.

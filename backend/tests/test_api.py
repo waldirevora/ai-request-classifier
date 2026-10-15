@@ -1,23 +1,36 @@
-from itertools import count
+import pytest
 
 from fastapi.testclient import TestClient
 
-from app import storage
+from app.database import conectar
 from app.main import app
 
 
 client = TestClient(app)
 
 
-def setup_function():
-    storage.solicitacoes.clear()
-    storage.contador_ids = count(1)
+@pytest.fixture(autouse=True)
+def preparar_banco_teste(monkeypatch):
+    monkeypatch.setenv(
+        "PGDATABASE",
+        "ai_request_classifier_test"
+    )
+
+    with conectar() as conn:
+        if conn.info.dbname != "ai_request_classifier_test":
+            raise RuntimeError(
+                "Banco de testes incorreto"
+            )
+
+        conn.execute(
+            "TRUNCATE TABLE solicitacoes RESTART IDENTITY"
+        )
 
 
-def dados_validos(titulo="Meu computador não liga"):
+def dados_validos(titulo="Meu computador nao liga"):
     return {
         "titulo": titulo,
-        "descricao": "O equipamento não inicia desde hoje."
+        "descricao": "O equipamento nao inicia desde hoje."
     }
 
 
@@ -27,7 +40,10 @@ def test_health_e_lista_vazia():
     assert resposta.status_code == 200
     assert resposta.json() == {"status": "ok"}
 
-    assert client.get("/solicitacoes").json() == []
+    resposta_lista = client.get("/solicitacoes")
+
+    assert resposta_lista.status_code == 200
+    assert resposta_lista.json() == []
 
 
 def test_criar_listar_e_consultar():
@@ -39,8 +55,11 @@ def test_criar_listar_e_consultar():
     assert resposta.status_code == 201
     assert resposta.json()["id"] == 1
     assert resposta.json()["status"] == "pendente_classificacao"
+    assert "criado_em" in resposta.json()
 
-    assert len(client.get("/solicitacoes").json()) == 1
+    lista = client.get("/solicitacoes").json()
+
+    assert len(lista) == 1
     assert client.get("/solicitacoes/1").status_code == 200
 
 
@@ -68,12 +87,12 @@ def test_atualizar_e_excluir():
     assert atualizacao.status_code == 200
     assert atualizacao.json()["titulo"] == "Problema no carregador"
 
-    resposta_invalida = client.put(
+    invalido = client.put(
         "/solicitacoes/1",
         json={"titulo": "Oi", "descricao": "Curta"}
     )
 
-    assert resposta_invalida.status_code == 422
+    assert invalido.status_code == 422
 
     exclusao = client.delete("/solicitacoes/1")
 
