@@ -1,0 +1,102 @@
+[
+  {
+    "id": "C01",
+    "titulo": "Meu computador não inicia",
+    "descricao": "O computador de um funcionário não inicia, mas existe equipamento reserva disponível.",
+    "categoria_esperada": "suporte_ti",
+    "impacto": "individual",
+    "urgencia": "media",
+    "prioridade_esperada": "baixa",
+    "justificativa_esperada": "Impacto individual com alternativa de trabalho, sem paralisação coletiva."
+  },
+  {
+    "id": "C02",
+    "titulo": "Sistema de vendas indisponível",
+    "descricao": "Toda a equipe comercial está sem acesso ao sistema durante o expediente.",
+    "categoria_esperada": "suporte_ti",
+    "impacto": "equipe",
+    "urgencia": "alta",
+    "prioridade_esperada": "alta",
+    "justificativa_esperada": "Equipe inteira bloqueada em atividade operacional atual."
+  },
+  {
+    "id": "C03",
+    "titulo": "Criar acesso para novo colaborador",
+    "descricao": "O colaborador começará na próxima semana e precisa de acesso ao portal.",
+    "categoria_esperada": "acessos_permissoes",
+    "impacto": "individual",
+    "urgencia": "baixa",
+    "prioridade_esperada": "baixa",
+    "justificativa_esperada": "Pedido individual planejado com antecedência."
+  },
+  {
+    "id": "C04",
+    "titulo": "Equipe sem acesso ao ERP",
+    "descricao": "Todos os operadores do estoque perderam o acesso ao ERP e não conseguem trabalhar.",
+    "categoria_esperada": "acessos_permissoes",
+    "impacto": "equipe",
+    "urgencia": "alta",
+    "prioridade_esperada": "alta",
+    "justificativa_esperada": "Bloqueio atual de equipe em processo essencial."
+  },
+  {
+    "id": "C05",
+    "titulo": "Consulta de reembolso",
+    "descricao": "Preciso saber o andamento de um reembolso com prazo para a próxima semana.",
+    "categoria_esperada": "financeiro",
+    "impacto": "individual",
+    "urgencia": "baixa",
+    "prioridade_esperada": "baixa",
+    "justificativa_esperada": "Consulta individual sem prazo imediato."
+  },
+  {
+    "id": "C06",
+    "titulo": "Pagamento a fornecedores bloqueado",
+    "descricao": "O pagamento de fornecedores da empresa está bloqueado com vencimento hoje.",
+    "categoria_esperada": "financeiro",
+    "impacto": "empresa",
+    "urgencia": "alta",
+    "prioridade_esperada": "alta",
+    "justificativa_esperada": "Impacto empresarial e urgência imediata."
+  },
+  {
+    "id": "C07",
+    "titulo": "Atualização cadastral no RH",
+    "descricao": "Quero corrigir meu endereço no cadastro de pessoal, sem prazo imediato.",
+    "categoria_esperada": "recursos_humanos",
+    "impacto": "individual",
+    "urgencia": "baixa",
+    "prioridade_esperada": "baixa",
+    "justificativa_esperada": "Correção individual sem urgência operacional."
+  },
+  {
+    "id": "C08",
+    "titulo": "Falha na folha de pagamento",
+    "descricao": "Uma falha impede o processamento da folha de toda a empresa antes do pagamento.",
+    "categoria_esperada": "recursos_humanos",
+    "impacto": "empresa",
+    "urgencia": "alta",
+    "prioridade_esperada": "alta",
+    "justificativa_esperada": "Pagamento coletivo comprometido com prazo próximo."
+  },
+  {
+    "id": "C09",
+    "titulo": "Solicitação de material de escritório",
+    "descricao": "Gostaria de pedir materiais para uso em uma reunião na próxima semana.",
+    "categoria_esperada": "outros",
+    "impacto": "individual",
+    "urgencia": "baixa",
+    "prioridade_esperada": "baixa",
+    "justificativa_esperada": "Demanda administrativa pontual com antecedência."
+  },
+  {
+    "id": "C10",
+    "titulo": "Sala de reunião sem cadeiras suficientes",
+    "descricao": "Uma equipe precisa de cadeiras adicionais para reuniões desta semana.",
+    "categoria_esperada": "outros",
+    "impacto": "equipe",
+    "urgencia": "media",
+    "prioridade_esperada": "media",
+    "justificativa_esperada": "Afeta uma equipe, mas há tempo para providenciar uma alternativa."
+  }
+]
