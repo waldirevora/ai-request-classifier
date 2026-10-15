@@ -54,3 +54,33 @@ Na pasta backend:
 4. Executar testes:
 
    python -m pytest -q
+
+
+## Banco de dados PostgreSQL
+
+O projeto utiliza PostgreSQL 18 para desenvolver a camada de persistência.
+
+A estrutura inicial está definida em
+`backend/sql/001_create_solicitacoes.sql`.
+
+### Ambiente local de desenvolvimento
+
+- PostgreSQL: 18.6
+- Host: 127.0.0.1
+- Porta: 5433
+- Banco: ai_request_classifier
+
+### Criar a estrutura
+
+Na raiz do projeto, com PostgreSQL instalado e o banco criado:
+
+```powershell
+psql -U postgres -h 127.0.0.1 -p 5433 -d ai_request_classifier -v ON_ERROR_STOP=1 -f .\backend\sql\001_create_solicitacoes.sql
+```
+
+### Estado atual
+
+O banco e a tabela de solicitações foram criados e testados.
+A API FastAPI ainda utiliza armazenamento temporário em memória.
+
+A conexão entre FastAPI e PostgreSQL será implementada na P11.
