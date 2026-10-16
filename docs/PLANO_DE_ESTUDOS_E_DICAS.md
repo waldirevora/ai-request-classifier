@@ -1,101 +1,76 @@
 # Plano de Estudos e Dicas | AI Request Classifier
 
-**Versão:** 3.53
+**Versão:** 3.58
 **Atualização:** 15/10/2026
-**Responsável:** desenvolvedor do AI Request Classifier
-**Situação:** P01–P11 concluídas; **P12 com 20 testes específicos e 25 testes totais aprovados (saídas do desenvolvedor), compreensão avaliada, aguardando revisão Git, commit e push.**
+**Estado:** P01–P12 concluídas. P13 com classificação real e fallback confirmados; testes integrados finais, GET de conferência e commit/push pendentes.
 
-## Objetivo de negócio
+## Objetivo empresarial e técnico
 
-Plataforma de triagem de solicitações internas. Funcionário cadastra título e descrição; backend registra; IA será **acionada automaticamente após o cadastro**, sugerirá categoria, prioridade e justificativa; analista **aceitará ou corrigirá** via React. Classificar não equivale a resolver. Ainda não existe integração com IA, frontend React nem fluxo de revisão.
+MVP de triagem corporativa: funcionário envia título e descrição pelo React → FastAPI/Pydantic valida → PostgreSQL confirma o cadastro → backend chama automaticamente a DeepSeek → valida categoria, impacto, urgência e justificativa → matriz P12 determina prioridade → PostgreSQL persiste a sugestão → analista aceita ou corrige. Se a IA falhar, a solicitação não é perdida. A classificação **não** resolve o chamado.
 
-## Arquitetura integrada
+## Arquitetura de referência
 
 ```mermaid
 flowchart TD
-    A["Funcionário envia solicitação<br/>Futuro: React"] --> B["HTTP POST<br/>FastAPI + Pydantic"]
-    B --> C[("PostgreSQL<br/>persistência atual")]
-    C -. "P13" .-> D["Backend aciona LLM automaticamente<br/>categoria, impacto, urgência e justificativa"]
-    D --> E["Regra determinística P12<br/>prioridade = impacto × urgência"]
-    E --> F["Backend salva sugestão<br/>aguardando_revisao"]
-    F -. "P14" .-> G["Analista revisa em React<br/>aceita ou corrige"]
+    A["Cadastro do funcionário<br/>Swagger agora; React na P14"] --> B["FastAPI + Pydantic"]
+    B --> C[("PostgreSQL<br/>INSERT confirmado")]
+    C --> D["DeepSeek API<br/>Chamada automática P13"]
+    D --> E["Validar JSON + matriz de prioridade P12"]
+    E --> F[("PostgreSQL<br/>aguardando_revisao")]
+    D -. "HTTP 401 / timeout / erro" .-> G[("classificacao_falhou<br/>Cadastro preservado")]
+    F --> H["Analista aceita ou corrige<br/>React P14"]
+    G --> H
 ```
 
-**Hoje:** o CRUD FastAPI/PostgreSQL está implementado conforme confirmação do desenvolvedor. P12 apenas prepara regras e casos locais; não altera endpoint, banco ou persistência.
+## Método de estudo
 
-## Método de aprendizagem — atualizado
+Aulas curtas, termos essenciais, código e documentos completos, testes, revisão do Git e exercícios de compreensão. Cada etapa termina com um status do que falta até o MVP. Prompts de continuidade são privados e não entram no repositório. GitHub privado até a P15 e autorização expressa.
 
-- **Aula integral e concisa:** conceitos essenciais, um diagrama integrado, código necessário, testes, perguntas de compreensão, indicação de commit e status final do que falta para o MVP.
-- O desenvolvedor escreve, executa e versiona o código; o orientador revisa. Evitar repetir pré-requisitos dominados.
-- Agrupar entregas para **reduzir o número de aulas**, sem remover componentes previstos. Pausar após cada aula para validação e autorização da próxima.
-- Arquivos Markdown são entregues **completos, prontos para substituir**, não como remendos. Não presumir que arquivos baixados tenham sido sincronizados com repositório local.
-- Não publicar senhas, tokens, dados reais ou `.env`; GitHub **privado até conclusão e auditoria final**, conforme decisão de 15/10/2026.
+## Histórico técnico validado
 
-## Etapas já concluídas
+- **P01–P09:** fundamentos, FastAPI, Pydantic, CRUD, arquitetura inicial e testes.
+- **P10–P11:** PostgreSQL Windows `127.0.0.1:5433`, SQL parametrizado com psycopg, persistência e banco de testes isolado; commit P11: `62d5b7a`.
+- **P12:** categorias, impacto, urgência, matriz determinística de prioridade, dez casos de referência; 20 testes específicos e 25 testes no total aprovados; exercícios, commit e push confirmados.
 
-| Etapa   | Conteúdo                                                        | Estado                                                                                                    |
-| ------- | --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| P01–P05 | Git, Python, tipos, condições, HTTP e JSON                      | Concluídas                                                                                                |
-| P06–P08 | FastAPI, CRUD e validação HTTP                                  | Concluídas                                                                                                |
-| P09     | Organização modular e pytest                                    | Concluída                                                                                                 |
-| P10     | PostgreSQL 18.6, banco, schema e SQL                            | Concluída                                                                                                 |
-| P11     | Conexão FastAPI–PostgreSQL, SQL parametrizado e testes isolados | Concluída conforme confirmação; teste específico após reiniciar Uvicorn não foi documentado separadamente |
+## P13 — resultados reais de 15/10/2026
 
-**Evidências Git conhecidas:** commit da P11 `62d5b7a`, `main` e `origin/main` coincidentes na consulta recebida; `.gitignore` exclui `backend/.env`, sem rastreamento conhecido; varredura exploratória de segredos não é auditoria final. PostgreSQL Windows local em `127.0.0.1:5433`; outra instância via Docker na porta 5432.
+**Entregas implementadas e observadas pelo desenvolvedor:**
 
-## Roadmap condensado — somente 4 aulas restantes
+1. **Fallback:** solicitação #8 recebeu `POST 201` apesar do erro DeepSeek `http_401`. Estado `classificacao_falhou`, sem sugestão IA, cadastro preservado.
+2. **Correção de configuração:** o PowerShell tinha variável `DEEPSEEK_API_KEY` conflitante com `backend/.env`. O comando `Remove-Item Env:\DEEPSEEK_API_KEY -ErrorAction SilentlyContinue` foi executado e o novo POST funcionou. Nenhum segredo foi compartilhado.
+3. **Classificação real:** solicitação #13, "Sistema financeiro indisponível", recebeu `aguardando_revisao`, categoria `suporte_ti`, impacto `equipe`, urgência `alta`, prioridade `alta`, justificativa coerente e modelo `deepseek-flash`.
+4. **Métricas desta única execução:** `tokens_entrada=329`, `tokens_saida=54`, `latencia_ia_ms=1012`. Não extrapolar um único resultado para SLA ou custo médio.
+5. **Compreensão:** exercícios A–D da P13 respondidos adequadamente. JSON válido não garante classificação semanticamente correta; prioridade segue regra Python; timeout não deve excluir cadastro.
 
-| Etapa   | Entrega e critérios                                                                                                                                                                | Estado                                  |
-| ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
-| **P12** | Taxonomia, matriz de prioridade, 10 casos de referência, 20 testes locais; regras documentadas                                                                                     | **Testes aprovados; falta commit/push** |
-| **P13** | Integração LLM via API, JSON estruturado, custo/latência/privacidade, **acionamento automático no cadastro**, persistência da sugestão, falhas e fallback                          | Pendente                                |
-| **P14** | API de revisão, status de triagem, aceitar/corrigir, React com formulário, listagem e pipeline integrado                                                                           | Pendente                                |
-| **P15** | Regressão e avaliação da IA, segurança e confiabilidade, documentação comercial, demonstração, métricas, auditoria de segredos/histórico, licença e publicação **sob autorização** | Pendente                                |
+**Ainda falta comprovar na P13:**
 
-O agrupamento torna as aulas maiores e pode exigir correções dentro da mesma aula. Não esconder atividades ou reduzir critérios de qualidade.
+- GET `/solicitacoes/13` com a mesma sugestão armazenada.
+- `pytest -q` completo após os arquivos P13, com PostgreSQL de testes acessível, `AI_ENABLED=false` e mock das chamadas externas.
+- Revisar staging, `.env.example` sem segredo, documentação, commit e push.
 
-## P12 — Conteúdo e arquivos
+Comandos na pasta `backend`:
 
-**Categorias:** `suporte_ti`, `acessos_permissoes`, `financeiro`, `recursos_humanos`, `outros`. **Impacto:** `individual`, `equipe`, `empresa`. **Urgência:** `baixa`, `media`, `alta`. **Prioridade:** `baixa`, `media`, `alta`.
-
-| Impacto / Urgência | Baixa | Média | Alta  |
-| ------------------ | ----- | ----- | ----- |
-| Individual         | baixa | baixa | média |
-| Equipe             | baixa | média | alta  |
-| Empresa            | média | alta  | alta  |
-
-A matriz é didática, não SLA oficial. A categoria expressa **o assunto**, a prioridade expressa **a necessidade relativa de atendimento**. A palavra “urgente” sozinha não é evidência suficiente.
-
-**Arquivos a implementar manualmente:**
-
-```text
-backend/app/classificacao.py
-backend/evaluation/casos_referencia.json
-backend/tests/test_classificacao.py
-docs/CRITERIOS_CLASSIFICACAO.md
+```powershell
+$env:AI_ENABLED = "false"
+.\.venv\Scripts\python.exe -m pytest -q
+Remove-Item Env:\AI_ENABLED -ErrorAction SilentlyContinue
 ```
 
-**Testes executados e confirmados por saída do PowerShell em 15/10/2026:** `pytest tests/test_classificacao.py -q` → **20 passed in 0.09s**; `pytest -q` → **25 passed in 2.16s**. Cobrem 9 combinações da matriz + 1 verificação estrutural + 10 verificações dos exemplos, além dos 5 testes de API anteriores. A suíte aprovada indica ausência de regressões **nos casos cobertos**, não prova ausência de bugs ou acurácia de LLM.
+**Mensagem de commit planejada:** `feat(ai): integra classificacao automatica e persistencia com fallback`. Não executar commit antes de confirmar a suíte completa.
 
-**Prática:** escrever `Enum` para categorias, impacto, urgência, prioridade; dicionário `MATRIZ`; função pura `calcular_prioridade(impacto, urgencia)`; salvar JSON de 10 exemplos sintéticos; criar testes; executar `python -m pytest tests/test_classificacao.py -q` e `python -m pytest -q` dentro de `backend`.
+## Roadmap restante
 
-**Compreensão validada em 15/10/2026:** 4 respostas A–D avaliadas: B e C corretas; A recebeu complemento sobre **impacto + urgência**; D recebeu esclarecimento de que exemplos ajudam a **avaliar** uma LLM, não necessariamente a treiná-la. O desenvolvedor demonstrou compreensão suficiente para seguir. Não requer repetir exercícios.
+| Etapa | Entrega                                                                                                    | Estado                                                |
+| ----- | ---------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| P13   | LLM real, persistência, fallback, testes e Git                                                             | Fluxo real e fallback OK; validações finais pendentes |
+| P14   | React, cadastro, fila de revisão, aceitar/corrigir sugestões                                               | Pendente                                              |
+| P15   | Avaliação com casos P12, métricas, segurança, README comercial, auditoria, licença e publicação autorizada | Pendente                                              |
 
-**Git — ainda pendente de evidência da P12:** após sincronizar o documento público completo `docs/PLANO_DE_ESTUDOS_E_DICAS.md`, verificar `git status -sb`, `git diff --check`; adicionar **somente** `backend/app/classificacao.py`, `backend/evaluation/casos_referencia.json`, `backend/tests/test_classificacao.py`, `docs/CRITERIOS_CLASSIFICACAO.md` e `docs/PLANO_DE_ESTUDOS_E_DICAS.md`; conferir `git diff --cached --name-only` e `git diff --cached --check`; revisar e, se estiver tudo certo, usar commit `feat: define taxonomia e criterios de prioridade` e `git push origin main`. Confirmar hash e estado do Git antes de considerar P12 concluída. `PROMPT_*.md` permanece privado e fora do Git.
+## Dicas de qualidade
 
-## Estado geral e próximos marcos
+- Testes não devem chamar a DeepSeek real nem consumir créditos; usar simulações e banco `ai_request_classifier_test` exclusivamente para dados descartáveis.
+- Não expor senha PostgreSQL ou chave DeepSeek, nem colocá-las no Git ou em logs. Verificar `.env` ignorado antes de commit.
+- O POST síncrono incorpora latência da IA; filas, retentativas e processamento assíncrono são pontos de melhoria, não requisitos adicionais agora.
+- Sugestão da IA é provisória e precisa de revisão humana. Medir acertos por campo (categoria, prioridade etc.) na P15.
 
-- **Implementado:** backend CRUD HTTP persistido em PostgreSQL, validações, testes de API, estrutura modular e documentação.
-- **Implementação P12 validada em testes:** taxonomia, matriz e casos de referência; não altera ainda endpoints ou banco; não há classificação de texto por IA.
-- **Falta imediatamente:** conferir staging, commit e push de P12, sem incluir o prompt privado ou segredos.
-- **Ainda não implementado:** chamada automática de LLM e persistência de classificação (P13), fila de revisão humana e React (P14), qualidade/auditoria/publicação (P15).
-- **Próximo marco após commit de P12:** iniciar P13 somente mediante autorização do desenvolvedor. O repositório permanecerá privado até o MVP completo e a auditoria final.
-
-## Referências
-
-- [README](../README.md)
-- [Arquitetura](ARQUITETURA.md)
-- [Critérios de classificação](CRITERIOS_CLASSIFICACAO.md)
-- [FastAPI](https://fastapi.tiangolo.com/)
-- [pytest](https://docs.pytest.org/)
-- [PostgreSQL](https://www.postgresql.org/docs/)
+**Progresso por aulas:** 12/15 (80%). Não representa 80% do MVP funcional. Próxima ação: GET, suíte completa P13 e revisão/commit/push.

@@ -1,159 +1,137 @@
 # AI Request Classifier
 
-API para triagem de solicitações internas, com evolução planejada para **classificação automática por inteligência artificial e revisão humana**.
+Aplicação de triagem de solicitações internas. O MVP permitirá cadastrar chamados, receber sugestões automáticas de classificação e permitir que um analista aceite ou corrija cada sugestão.
 
-> **Estado do projeto — P11 em validação:** CRUD com FastAPI e PostgreSQL implementado; testes locais informados como funcionais pelo desenvolvedor. A persistência após reiniciar o Uvicorn e a revisão final de segurança/Git ainda precisam de confirmação específica. **A classificação por IA e a interface React ainda não foram implementadas.**
+> **Estado em 15/10/2026:** P01–P12 concluídas (25 testes aprovados na P12). **P13 em validação final:** chamada real à DeepSeek com sucesso no POST da solicitação #13, classificação persistida segundo a resposta da API e estado `aguardando_revisao`. O fallback para falha de autenticação também foi observado no POST #8 (`classificacao_falhou`, cadastro mantido). **Ainda faltam confirmar GET posterior, suíte automatizada completa da P13 e commit/push.** React e revisão humana serão implementados na P14. Repositório privado até a auditoria final e autorização.
 
-## Problema de negócio
+## Problema empresarial
 
-Solicitações internas podem chegar com informações e prioridades heterogêneas, exigindo triagem manual repetitiva. O objetivo do produto é padronizar a entrada e, em etapas futuras, apoiar o analista com sugestões rastreáveis de categoria, prioridade e justificativa.
+Solicitações internas chegam sem classificação padronizada. Isso exige triagem manual e pode causar encaminhamento inconsistente. O sistema propõe reduzir esse trabalho por meio de sugestões de IA verificáveis e revisão humana; **classificação não equivale a resolver o chamado**.
 
-**Fluxo planejado:** funcionário cadastra uma solicitação → backend registra no banco → IA é acionada automaticamente → sugestão é persistida → analista aceita ou corrige no pipeline. **Classificar uma solicitação não significa resolver o chamado.**
-
-## Funcionalidades implementadas
-
-- API HTTP com FastAPI e documentação interativa em `/docs`.
-- Cadastro, listagem, consulta individual, atualização e exclusão de solicitações.
-- Validação de título e descrição com Pydantic e restrições no PostgreSQL.
-- Persistência com PostgreSQL usando `psycopg` e consultas SQL parametrizadas.
-- Geração de IDs e data de criação pelo banco.
-- Transações com `COMMIT` em operações bem-sucedidas e `ROLLBACK` em exceções.
-- Testes automatizados com `pytest`/`TestClient` e banco de testes separado.
-
-## Arquitetura atual
+## Fluxo alvo
 
 ```mermaid
 flowchart LR
-    A[Cliente HTTP / Swagger] --> B[FastAPI + Pydantic]
-    B --> C[Rotas CRUD]
-    C --> D[psycopg / SQL parametrizado]
-    D --> E[(PostgreSQL)]
+    A[Funcionário / futuro React] --> B[POST /solicitacoes FastAPI]
+    B --> C[(PostgreSQL: INSERT confirmado)]
+    C --> D[DeepSeek API, se IA habilitada]
+    D --> E[Validar JSON / calcular prioridade]
+    E --> F[(PostgreSQL: sugestão + aguardando_revisao)]
+    D -. Falha .-> G[(PostgreSQL: classificacao_falhou)]
+    F --> H[Analista aceita ou corrige na P14]
+    G --> H
 ```
 
-O React, a classificação por LLM e o pipeline de revisão humana são **funcionalidades planejadas**, não componentes em produção.
+A integração implementada na P13 executa a chamada **sincronamente após o COMMIT do cadastro**. O tempo de resposta do POST inclui a latência externa da IA; processamento assíncrono e filas poderão ser estudados após o MVP.
 
-Detalhes: [Arquitetura técnica](docs/ARQUITETURA.md) e [Plano de estudos](docs/PLANO_DE_ESTUDOS_E_DICAS.md).
+## Stack
 
-## Tecnologias
+Python 3.14 (ambiente local do desenvolvedor), FastAPI, Pydantic, PostgreSQL 18.6 (Windows na porta `5433`), psycopg, python-dotenv, pytest e biblioteca padrão `urllib.request` para a API HTTP DeepSeek.
 
-- Python (ambiente local de desenvolvimento: 3.14.7)
-- FastAPI, Uvicorn e Pydantic
-- PostgreSQL (ambiente local Windows: 18.6; porta `5433`)
-- `psycopg` 3 e `python-dotenv`
-- `pytest` e `TestClient`
-
-A porta `5433` é específica do ambiente usado neste projeto: a porta `5432` já atende outra instância PostgreSQL no Docker. Em outra máquina, configure a porta correspondente ao servidor utilizado.
-
-## Estrutura principal
+## Arquivos centrais
 
 ```text
 backend/
-├── app/
-│   ├── main.py                   # Aplicação FastAPI e /health
-│   ├── schemas.py                # Validação Pydantic
-│   ├── database.py               # Conexão PostgreSQL
-│   └── routes/
-│       └── solicitacoes.py       # CRUD e SQL parametrizado
-├── sql/
-│   └── 001_create_solicitacoes.sql
-├── tests/
-│   └── test_api.py
-├── .env.example                  # Exemplo sem credenciais reais
-├── requirements.txt
-└── requirements-dev.txt
-
+  app/
+    main.py                  # inicialização FastAPI e /health
+    database.py              # conexão PostgreSQL e carregamento de .env
+    schemas.py               # entrada HTTP
+    classificacao.py         # taxonomia e matriz determinística P12
+    ia.py                    # chamada LLM e validação JSON P13
+    triagem.py               # orquestração da sugestão após INSERT P13
+    routes/solicitacoes.py   # CRUD, POST com acionamento automático P13
+  sql/
+    001_create_solicitacoes.sql
+    002_add_classificacao_ia.sql
+  tests/
+    test_api.py
+    test_classificacao.py
+    test_ia.py
+    test_triagem.py
+  evaluation/casos_referencia.json
+  .env.example
+  requirements.txt
+  requirements-dev.txt
 docs/
-├── ARQUITETURA.md
-└── PLANO_DE_ESTUDOS_E_DICAS.md
+  ARQUITETURA.md
+  CRITERIOS_CLASSIFICACAO.md
+  PLANO_DE_ESTUDOS_E_DICAS.md
 ```
 
-## Execução local (Windows / PowerShell)
+## Configuração local (PowerShell)
 
-**Pré-requisitos:** Python compatível, PostgreSQL em execução e cliente `psql` acessível no terminal. Os comandos a seguir são exemplos para o ambiente Windows do projeto.
-
-**1. Preparar ambiente Python**, a partir da raiz do repositório:
+Na raiz do repositório:
 
 ```powershell
-cd backend
-python -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
-Copy-Item .env.example .env
+cd D:\Projects\ai-request-classifier
+.\backend\.venv\Scripts\python.exe -m pip install -r .\backend\requirements-dev.txt
 ```
 
-Se `.venv` já existir, não é necessário recriá-lo. Edite `backend/.env` localmente, sem compartilhar sua senha:
+O arquivo `backend/.env` contém a senha PostgreSQL e, quando habilitada, a chave de API da DeepSeek. **Nunca versione `.env`.** Adicione as variáveis `AI_ENABLED`, `DEEPSEEK_API_KEY` e `AI_MODEL` ao `.env` existente a partir de `.env.example`, preservando suas credenciais PostgreSQL.
+
+A configuração de IA inicia desligada:
 
 ```dotenv
-PGHOST=127.0.0.1
-PGPORT=5433
-PGDATABASE=ai_request_classifier
-PGUSER=postgres
-PGPASSWORD=SUA_SENHA_LOCAL
+AI_ENABLED=false
+DEEPSEEK_API_KEY=SUBSTITUA_LOCALMENTE
+AI_MODEL=deepseek-flash
 ```
 
-O usuário `postgres` é utilizado **somente no laboratório local**. Em ambientes reais, crie uma conta específica com permissões mínimas. Nunca faça commit de `.env`.
+### Migração incremental da P13
 
-**2. Criar os bancos**, uma única vez, se ainda não existirem. Volte à raiz do repositório:
+Depois de confirmar o banco correto, executar **nos dois bancos**:
 
 ```powershell
-cd ..
-psql -U postgres -h 127.0.0.1 -p 5433 -d postgres -c "CREATE DATABASE ai_request_classifier;"
-psql -U postgres -h 127.0.0.1 -p 5433 -d postgres -c "CREATE DATABASE ai_request_classifier_test;"
+psql -U postgres -h 127.0.0.1 -p 5433 -d ai_request_classifier -v ON_ERROR_STOP=1 -f .\backend\sql\002_add_classificacao_ia.sql
+psql -U postgres -h 127.0.0.1 -p 5433 -d ai_request_classifier_test -v ON_ERROR_STOP=1 -f .\backend\sql\002_add_classificacao_ia.sql
 ```
 
-Se um banco já existir, **não o exclua**: apenas verifique se é o banco correto antes de continuar.
+Não recrie as bases nem execute `TRUNCATE` no banco de desenvolvimento.
 
-**3. Criar as tabelas** nos dois bancos:
+### Testes sem custo de IA
 
-```powershell
-psql -U postgres -h 127.0.0.1 -p 5433 -d ai_request_classifier -v ON_ERROR_STOP=1 -f .\backend\sql\001_create_solicitacoes.sql
-psql -U postgres -h 127.0.0.1 -p 5433 -d ai_request_classifier_test -v ON_ERROR_STOP=1 -f .\backend\sql\001_create_solicitacoes.sql
-```
-
-**4. Iniciar a API**, a partir da pasta `backend`:
+Na pasta `backend`, mantenha `AI_ENABLED=false` para a suíte existente. Os novos testes de integração usam IA simulada (mock):
 
 ```powershell
 cd backend
+$env:AI_ENABLED = "false"
+.\.venv\Scripts\python.exe -m pytest -q
+Remove-Item Env:\AI_ENABLED
+```
+
+Os testes com PostgreSQL limpam o banco **exclusivo** `ai_request_classifier_test`. Confirme que ele não contém dados importantes. **A suíte completa após a integração real da P13 ainda precisa ser confirmada pelo desenvolvedor.**
+
+### Teste real da integração
+
+Configure uma chave válida em `backend/.env`, altere `AI_ENABLED=true`, inicie:
+
+```powershell
+cd D:\Projects\ai-request-classifier\backend
 .\.venv\Scripts\python.exe -m uvicorn app.main:app --reload
 ```
 
-Acesse a documentação interativa em <http://127.0.0.1:8000/docs> ou a verificação de saúde em <http://127.0.0.1:8000/health>.
+Abra `http://127.0.0.1:8000/docs` e execute `POST /solicitacoes` com dados fictícios. A resposta esperada após chamada válida tem `status=aguardando_revisao`, categoria, impacto, urgência, prioridade e justificativa. **Observado no POST #13:** `suporte_ti`, impacto `equipe`, urgência `alta`, prioridade `alta`, 329 tokens de entrada, 54 tokens de saída e latência de 1.012 ms. **O GET posterior ainda precisa ser confirmado.** Caso a API externa falhe, o cadastro deve permanecer com `status=classificacao_falhou`, como ocorreu com o POST #8 após HTTP 401. Sem IA habilitada, mantém `pendente_classificacao`.
 
-**5. Executar os testes**, a partir de `backend`:
+## Endpoints atuais
 
-```powershell
-.\.venv\Scripts\python.exe -m pytest -q
-```
-
-**Atenção:** a suíte limpa a tabela `solicitacoes` de `ai_request_classifier_test` para isolar os testes. **Não utilize dados importantes nesse banco** e não execute o procedimento de limpeza no banco principal.
-
-## Endpoints
-
-| Método | Caminho | Comportamento esperado |
+| Método | Rota | Função |
 |---|---|---|
-| `GET` | `/health` | Estado básico da API (`200`) |
-| `POST` | `/solicitacoes` | Cadastra solicitação (`201`) |
-| `GET` | `/solicitacoes` | Lista solicitações (`200`) |
-| `GET` | `/solicitacoes/{id}` | Consulta por ID (`200` ou `404`) |
-| `PUT` | `/solicitacoes/{id}` | Atualiza título e descrição (`200` ou `404`) |
-| `DELETE` | `/solicitacoes/{id}` | Exclui por ID (`204` ou `404`) |
+| GET | `/health` | Saúde básica |
+| POST | `/solicitacoes` | Grava, tenta IA automaticamente se habilitada e retorna cadastro |
+| GET | `/solicitacoes` | Lista registros e sugestões |
+| GET | `/solicitacoes/{id}` | Consulta |
+| PUT | `/solicitacoes/{id}` | Edita título/descrição (não reclassifica) |
+| DELETE | `/solicitacoes/{id}` | Remove |
 
-Entradas inválidas recebem `422`. As solicitações iniciam com o estado `pendente_classificacao`.
+## Regras e métricas
 
-## Qualidade, segurança e limites
-
-- O arquivo `.env.example` pode ser versionado **apenas com valores fictícios**; `.env` e credenciais reais não podem entrar no Git, inclusive no histórico.
-- SQL utiliza parâmetros, evitando interpolação direta de dados recebidos do cliente.
-- Os testes automatizados utilizam uma base separada para não apagar registros de desenvolvimento.
-- **Ainda não há autenticação, autorização, React ou integração com IA.** Não exponha esta API diretamente à internet.
-- A validação final da P11, a auditoria pré-publicação e a escolha de licença estão pendentes.
-- Custo operacional e latência final **ainda não foram medidos**; não há resultados de produção a declarar.
+- Categorias: TI, Acessos, Financeiro, RH e Outros (códigos em `classificacao.py`).
+- O modelo propõe categoria, impacto, urgência e justificativa. O backend valida esses campos com Pydantic.
+- A prioridade final é **determinística**, calculada pela matriz da P12.
+- O sistema registra modelo, tokens reportados e tempo de resposta em milissegundos. **Uma amostra real observada:** 329 tokens de entrada, 54 tokens de saída e 1.012 ms; uma execução não representa a latência típica. Custo por classificação e estatísticas de desempenho ainda precisam ser medidos.
+- Dados do chamado são enviados à API externa quando habilitada: usar **somente dados fictícios** durante o exercício e nunca enviar segredos ou dados pessoais reais.
+- Não há autenticação, autorização, workflow de revisão concluído, controle de reprocessamento ou mecanismo de fila. **Não expor a API à internet.**
 
 ## Próximas etapas
 
-1. Concluir a validação da P11 e revisar o Git, segredos e documentação antes de tornar o repositório público.
-2. Definir categorias, prioridades e critérios de avaliação.
-3. Integrar o modelo de IA e acionar a classificação automaticamente após o cadastro, com tratamento de falhas.
-4. Persistir sugestões e implementar o pipeline de revisão humana em React.
-5. Ampliar testes, segurança e métricas de custo/latência.
-
-**Repositório privado até a auditoria e decisão explícita de publicação.**
+P13: confirmar GET da solicitação #13, testes de regressão e commit/push; P14: React e revisão humana; P15: avaliação com os 10 casos da P12, qualidade, documentação comercial, medidas reais, auditoria de segredos, licença e publicação somente após autorização expressa.
