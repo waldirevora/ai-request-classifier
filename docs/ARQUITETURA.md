@@ -1,99 +1,76 @@
 # Arquitetura | AI Request Classifier
 
-**Referência:** P13 concluída; **P14 validada funcionalmente em localhost** (revisão humana manual, 41 testes Python aprovados, build React/Vite aprovado). Aguarda revisão de staging, commit e push. GitHub privado durante o desenvolvimento.
+**Estado:** MVP funcional local até P14; P15 em validação. Não está preparado para implantação pública.
 
-## Objetivo empresarial
+## Negócio
 
-Padronizar solicitações internas; usar DeepSeek para **sugerir**, e um analista para **aceitar ou corrigir** a triagem. A classificação determina categoria e prioridade; não resolve o chamado.
+Padronizar a triagem de solicitações internas: cadastro, sugestão de IA, cálculo determinístico da prioridade e decisão humana. **Classificar não é resolver o chamado.**
 
-## Diagrama ponta a ponta
+## Fluxo ponta a ponta
 
 ```mermaid
 flowchart TD
-  A[Funcionário: React formulário] -->|fetch POST /api/solicitacoes| B[Vite proxy de desenvolvimento]
-  B -->|POST /solicitacoes| C[FastAPI e Pydantic]
-  C --> D[(PostgreSQL: INSERT e COMMIT)]
-  D --> E[triagem.py → ia.py]
-  E -->|HTTPS POST + Bearer API key| F[DeepSeek LLM]
-  F --> G[Pydantic: categoria, impacto, urgência]
-  G --> H[classificacao.py: matriz P12]
-  H --> I[(PostgreSQL: sugestão, aguardando_revisao)]
-  E -. erro ou timeout .-> J[(PostgreSQL: classificacao_falhou)]
-  I --> K[React: fila de revisão]
-  J --> K
-  K -->|POST /api/revisoes/id| B
-  C --> L[schemas_revisao.py: validar decisão]
-  L --> M[revisoes.py: SELECT FOR UPDATE]
-  M --> N[(PostgreSQL: campos finais, revisada)]
+ A[React: cadastro] -->|fetch /api/solicitacoes| B[Vite proxy local]
+ B -->|POST /solicitacoes| C[FastAPI e Pydantic]
+ C --> D[(PostgreSQL: INSERT / COMMIT)]
+ D --> E[triagem.py chama ia.py]
+ E -->|HTTPS Bearer + JSON| F[DeepSeek]
+ F --> G[Pydantic valida categoria, impacto e urgência]
+ G --> H[classificacao.py aplica matriz P12]
+ H --> I[(PostgreSQL: sugestão / aguardando_revisao)]
+ E -. falha .-> J[(PostgreSQL: classificacao_falhou)]
+ I --> K[React: analista aceita ou corrige]
+ J --> K
+ K -->|POST /revisoes/id| L[FastAPI: decisão e validação]
+ L --> M[(PostgreSQL: campos finais / revisada)]
+ N[P15: avaliação offline ou live de 10 casos] -. chama diretamente .-> E
 ```
 
-Em desenvolvimento, o navegador chama `/api` na origem do Vite (`5173`), e o Vite encaminha para a FastAPI (`8000`). Isso é **proxy reverso local**, não uma implantação de produção. O frontend **nunca chama a DeepSeek** nem precisa da chave dela.
+## Responsabilidades
 
-## Responsabilidades dos módulos
-
-| Arquivo | Responsabilidade |
+| Arquivo | Papel |
 |---|---|
-| `frontend/src/App.jsx` | Formulário, estado React, seleção e decisão do analista |
-| `frontend/src/api.js` | `fetch` para FastAPI, JSON e tratamento de erros HTTP |
-| `frontend/vite.config.js` | Proxy `/api` → FastAPI local |
-| `backend/app/main.py` | Cria FastAPI e inclui routers `/solicitacoes` e `/revisoes` |
-| `backend/app/routes/solicitacoes.py` | CRUD, insere e aciona `processar_solicitacao()` P13 |
-| `backend/app/schemas.py` | Valida entrada do cadastro |
-| `backend/app/database.py` | Conexão psycopg e `.env` local |
-| `backend/app/ia.py` | Chamada HTTPS DeepSeek, JSON estruturado e validação |
-| `backend/app/triagem.py` | Orquestra IA, fallback e projeção dos campos retornados |
-| `backend/app/classificacao.py` | Taxonomia/`Enum` e matriz determinística de prioridade |
-| `backend/app/schemas_revisao.py` | Contrato de aceite/correção com Pydantic |
-| `backend/app/routes/revisoes.py` | Fila, histórico, transação de revisão e cálculo final |
-| `backend/sql/003_add_revisao_humana.sql` | Novas colunas de resultado final e metadados da decisão |
-| `backend/tests/test_revisoes.py` | Testes integrados no PostgreSQL isolado, sem LLM real |
+| `frontend/src/App.jsx` | UI de cadastro, fila e revisão humana |
+| `frontend/src/api.js` | Chamadas `fetch` à FastAPI |
+| `frontend/vite.config.js` | Proxy local `/api` -> porta 8000 |
+| `backend/app/main.py` | Inicialização e inclusão dos routers |
+| `backend/app/routes/solicitacoes.py` | CRUD e acionamento automático da triagem |
+| `backend/app/schemas.py` | Validação do cadastro |
+| `backend/app/database.py` | Conexão PostgreSQL e carregamento `.env` |
+| `backend/app/triagem.py` | Chamada da IA, persistência e fallback |
+| `backend/app/ia.py` | HTTPS DeepSeek, instruções, JSON e validação de resposta |
+| `backend/app/classificacao.py` | Categoria, impacto, urgência e prioridade pela matriz |
+| `backend/app/schemas_revisao.py` | Contrato Pydantic para decisão humana |
+| `backend/app/routes/revisoes.py` | Fila, histórico, aceite/correção com transação |
+| `backend/evaluation/avaliar_ia.py` | P15: avaliação pontual direta, sem escrever no banco |
+| `backend/tests/test_avaliacao.py` | P15: testes offline do cálculo de métricas |
 
-## Fluxo da revisão humana
+## Dados e estados
 
-**Aceitar:** somente quando `status=aguardando_revisao`, com sugestão completa. O backend copia categoria, impacto e urgência sugeridos e **recalcula** a prioridade pela matriz P12.
+- `001_create_solicitacoes.sql`: `id`, título, descrição, status e data de criação.
+- `002_add_classificacao_ia.sql`: categoria, impacto, urgência, prioridade e justificativa sugeridos; modelo, tokens, latência e hora da classificação.
+- `003_add_revisao_humana.sql`: categoria, impacto, urgência e prioridade finais; decisão, observação e data da revisão.
+- Estados: `pendente_classificacao` (sem sugestão), `aguardando_revisao` (IA respondeu), `classificacao_falhou` (API falhou), `revisada` (decisão final).
 
-**Corrigir:** permitido em `aguardando_revisao`, `classificacao_falhou` ou `pendente_classificacao`. O analista informa categoria, impacto, urgência e motivo com pelo menos 10 caracteres. O backend valida os `Enum` e calcula a prioridade.
+O cadastro é confirmado **antes** de chamar a DeepSeek: falhas de rede não apagam o registro. O analista pode corrigir manualmente quando IA falha. Aceite exige sugestão existente; revisão duplicada devolve `409` e a operação usa `SELECT ... FOR UPDATE`.
 
-**Persistir:** dentro de uma transação SQL, `SELECT ... FOR UPDATE` bloqueia o registro enquanto a decisão é gravada. A segunda tentativa de revisar um registro já finalizado recebe `409 Conflict`, evitando sobrescrita silenciosa.
+## Contrato HTTP principal
 
-**Resposta:** `status=revisada`, `categoria_final`, `impacto_final`, `urgencia_final`, `prioridade_final`, `decisao_revisao`, `observacao_revisao`, `revisado_em`. As sugestões originais da IA continuam armazenadas para comparação.
+- `POST /solicitacoes`: cadastro, tentativa automática de IA, resposta `201`.
+- `GET /solicitacoes` e `GET /solicitacoes/{id}`: consulta.
+- `PUT /solicitacoes/{id}` / `DELETE /solicitacoes/{id}`: CRUD existente.
+- `GET /revisoes/pendentes`: fila; `GET /revisoes/concluidas`: histórico.
+- `POST /revisoes/{id}`: `{"decisao":"aceitar"}` ou `{"decisao":"corrigir", "categoria":"...", "impacto":"...", "urgencia":"...", "observacao":"..."}`.
+- O backend recalcula prioridade final mesmo quando a interface exibe valores previstos.
 
-## Evolução do esquema
+## Avaliação e qualidade (P15)
 
-`001_create_solicitacoes.sql`: id, título, descrição, status e criação.
+`avaliar_ia.py` lê o conjunto P12 e, **somente com `--live`**, chama `app.ia.classificar_solicitacao` dez vezes (ou menos, com `--limit`). Compara categoria, impacto, urgência e prioridade esperadas com as sugestões. Contabiliza erros como falhas, mostra tokens e latência e não grava dados no PostgreSQL. Taxas com dez casos são exploratórias, não métricas de produção.
 
-`002_add_classificacao_ia.sql`: sugestões, justificativa, modelo, tokens, latência e timestamp de classificação.
+Testes P14: 41 passaram no Windows. P15: **46 testes Python aprovados**, `pip check` sem conflitos identificados e frontend compilado com Vite 6.4.4 (`npm ci` e `npm run build` aprovados); `npm audit` não reportou vulnerabilidades conhecidas. A avaliação da DeepSeek executou **10/10 chamadas com sucesso**: categoria 90%, impacto 90%, urgência 70%, prioridade 90%, acerto completo 60%, 3.289 tokens de entrada, 551 de saída e latência média de 1.215 ms. Os resultados se limitam a dez casos fictícios; custo monetário não foi medido. Banco automatizado `ai_request_classifier_test` é separado e usa `TRUNCATE` destrutivo somente nele.
 
-`003_add_revisao_humana.sql`: `categoria_final VARCHAR(32)`, `impacto_final VARCHAR(16)`, `urgencia_final VARCHAR(16)`, `prioridade_final VARCHAR(8)`, `decisao_revisao VARCHAR(16)`, `observacao_revisao VARCHAR(500)` e `revisado_em TIMESTAMPTZ`. Todas novas colunas são inicialmente nulas para preservar registros existentes.
+## Limitações e segurança
 
-Migração 003 incremental e não destrutiva. Aplicar **primeiro** no PostgreSQL Windows `127.0.0.1:5433`, nos bancos `ai_request_classifier` e `ai_request_classifier_test`, antes de iniciar o novo backend. Não confundir com a instância Docker na porta 5432.
+Sem autenticação, autorização, identificação auditável do revisor, limites de tráfego e privacidade operacional completos; não expor a aplicação fora de localhost. A chamada ao modelo usa texto como dado não confiável e há instruções básicas para ignorar comandos embutidos, mas isso **não equivale a proteção completa contra prompt injection**. Na P15 testar exemplos adversariais e manter revisão humana. GitHub público significa publicação do **código**, não habilitação de um servidor de produção.
 
-## Estados de negócio
-
-| Estado | Significado | Ação na P14 |
-|---|---|---|
-| `pendente_classificacao` | IA desabilitada / ainda não processado | Correção/classificação manual |
-| `aguardando_revisao` | IA gerou sugestão | Aceitar ou corrigir |
-| `classificacao_falhou` | Falha da LLM após cadastro | Correção/classificação manual |
-| `revisada` | Decisão humana registrada | Visualizar no histórico; não revisar novamente |
-
-## Contratos de API da revisão
-
-`GET /revisoes/pendentes` e `GET /revisoes/concluidas` devolvem listas; `POST /revisoes/{id}` recebe `{"decisao":"aceitar"}` ou `{"decisao":"corrigir","categoria":"suporte_ti","impacto":"equipe","urgencia":"alta","observacao":"Justificativa válida..."}`.
-
-`404`: ID inexistente. `409`: revisão duplicada, sugestão ausente para aceite ou estado incompatível. `422`: corpo ou valores inválidos. O servidor é a fonte de verdade, mesmo quando o React verifica os campos antes de enviar.
-
-## Testes e segurança
-
-A suíte de integração usa banco exclusivo `ai_request_classifier_test`, verificado **antes** de `TRUNCATE TABLE ... RESTART IDENTITY`. A IA permanece desativada/simulada para não consumir créditos. Validar também manualmente: cadastrar, revisar, atualizar a página e confirmar persistência do resultado.
-
-**Limitações conscientes do MVP:** sem autenticação, identificação do analista, política de acesso, paginação, reprocessamento automático, fila assíncrona, SLA ou tratamento de concorrência de alterações em título/descrição. O `FOR UPDATE` cobre concorrência entre revisões, não todas as operações CRUD. **Não expor à internet.** P15 tratará avaliação, auditoria e recomendações de segurança; não alegar segurança de produção.
-
-## Evidências e ressalvas da P14 (15/10/2026)
-
-- `pytest -q` com `AI_ENABLED=false`: **41 passed in 5.30s**, utilizando banco isolado de testes.
-- `npm run build`: **25 módulos transformados**, Vite 6.4.4, **built in 1.39s**.
-- Tela vazia inicial resolvida com importação explícita de `React` em `frontend/src/App.jsx`.
-- Desenvolvedor confirmou fluxo de revisão humana, persistência e exclusão seletiva dos registros de teste #6–#11.
-- Esses resultados não constituem auditoria de segurança, teste de carga nem validação de produção.
-- **P14 permanece aberta até confirmação de commit e push.**
+O `.env` nunca deve ser versionado; `frontend/node_modules/`, `frontend/dist/` e o prompt privado não entram no Git. Auditoria local pré-publicação: `backend/.env` fora do Git; `frontend/node_modules` e `frontend/dist` ignorados; Gitleaks examinou 16 commits e aproximadamente 275 KB, sem achar segredos conforme suas regras. A licença MIT foi escolhida; falta revisão do staging e commit/push. **A visibilidade do repositório só muda com autorização explícita do desenvolvedor.**

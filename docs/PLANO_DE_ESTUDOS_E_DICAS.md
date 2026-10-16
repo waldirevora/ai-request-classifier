@@ -1,76 +1,75 @@
 # Plano de Estudos e Dicas | AI Request Classifier
 
-**Versão:** 3.61
-**Estado:** P01–P13 concluídas. **P14 funcionalmente validada no computador do desenvolvedor:** revisão humana operante, 41 testes Python aprovados e build React aprovado; pendente revisão do Git, commit e push. P15 pendente. GitHub privado até finalização, auditoria e autorização expressa.
+**Versão:** 3.65
+**Status:** P01–P14 concluídas segundo evidências do desenvolvedor; P15 em execução. GitHub privado até auditoria e autorização explícita.
 
-## Objetivo empresarial
+## Objetivo de negócio
 
-Triagem interna: funcionário registra solicitação; backend persiste e aciona IA DeepSeek; IA sugere categoria/impacto/urgência/justificativa; matriz de negócio define prioridade; analista aceita ou corrige em React; sistema grava resultado final no PostgreSQL. Classificação não equivale à resolução do chamado.
+Funcionário registra solicitação interna pelo React; FastAPI persiste no PostgreSQL e chama automaticamente DeepSeek; IA sugere categoria, impacto, urgência e justificativa; Python calcula prioridade pela matriz P12; analista aceita ou corrige no React; backend registra decisão final. Erros da IA não podem apagar o cadastro. Classificar não significa resolver o chamado.
 
-## Fluxo integrado P14
+## Arquitetura integrada
 
 ```mermaid
 flowchart TD
- A[React: nova solicitação] --> B[FastAPI: POST /solicitacoes]
- B --> C[(PostgreSQL: cadastro confirmado)]
- C --> D[DeepSeek: sugestão automática]
- D --> E[(PostgreSQL: aguardando_revisao)]
- D -. falha .-> F[(classificacao_falhou)]
- E --> G[React: fila humana]
- F --> G
- G --> H[POST /revisoes/id: aceitar ou corrigir]
- H --> I[Matriz P12 calcula prioridade final]
- I --> J[(PostgreSQL: revisada)]
+ A[React: formulário] --> B[FastAPI / Pydantic]
+ B --> C[(PostgreSQL: cadastro)]
+ C --> D[DeepSeek: sugestão]
+ D --> E[Python: matriz P12]
+ E --> F[(PostgreSQL: aguardando_revisao)]
+ D -. falha .-> G[(PostgreSQL: classificacao_falhou)]
+ F --> H[React: analista aceita ou corrige]
+ G --> H
+ H --> I[(PostgreSQL: revisada)]
+ J[P15: avaliação de 10 casos] -. chamada direta .-> D
 ```
 
-## Método das aulas
+## Regras de acompanhamento
 
-- Aulas curtas, porém com **explicação de conceito, motivo, fluxo entre arquivos e teste**.
-- Fornecer arquivos completos para substituição, não fragmentos isolados (inclusive `README.md`, `ARQUITETURA.md`, este plano e o prompt privado).
-- Developer executa/entende o código localmente; não declarar resultados de testes que ele ainda não confirmou.
-- Fazer avaliação de compreensão e orientar commit/push **após** os testes e revisão de segurança.
-- Encerrar toda aula com status do que falta para o MVP.
+- Aula concisa, porém explicando o **porquê** das escolhas, o caminho entre componentes, termos relevantes, testes e Git.
+- O desenvolvedor executa os comandos; o assistente valida evidências sem inventar resultados.
+- Arquivos de documentação entregues completos, para substituição integral.
+- **Guia oficial:** `docs/GUIA.md` (mesmo caminho, substituir o arquivo completo em cada atualização; **não** manter na raiz, nem criar guias numerados).
+- Prompt de continuidade privado: `PROMPT_CONTINUIDADE_AI_REQUEST_CLASSIFIER.md`, fora do Git.
+- Sempre encerrar aulas com status atualizado das entregas até a conclusão.
+- Repositório privado até fim do desenvolvimento e auditoria autorizada; aplicação apenas localhost sem autenticação.
 
-## Histórico
+## Progresso histórico
 
-| Etapa | Entregas | Situação |
+| Etapa | Conteúdo | Situação |
 |---|---|---|
-| P01–P09 | Fundamentos, FastAPI, CRUD Pydantic, testes e organização | Concluída |
-| P10–P11 | PostgreSQL Windows 18.6 na porta 5433, persistência, consultas parametrizadas e testes isolados | Concluída; commit P11 `62d5b7a` |
-| P12 | Cinco categorias, matriz impacto+urgência, dez casos de referência, 25 testes totais naquela etapa | Concluída; commit e push confirmados |
-| P13 | DeepSeek `deepseek-flash`, chamada automática, fallback, persistência de classificação e métricas | Concluída; commit e push confirmados |
-| **P14** | **React, cadastro, fila do analista, aceite/correção, revisão persistida, testes** | **Validada funcionalmente; falta versionar** |
-| P15 | Avaliação da IA, testes E2E, desempenho/custos, documentação final, segurança e eventual publicação | Pendente |
+| P01–P09 | Fundamentos, FastAPI, validações, CRUD e testes | Concluída |
+| P10–P11 | PostgreSQL, consultas parametrizadas, testes isolados; commit P11 `62d5b7a` | Concluída |
+| P12 | Taxonomia, matriz de prioridade e 10 casos de referência | Concluída; 25 testes totais na época, commit/push confirmados |
+| P13 | DeepSeek `deepseek-flash`, chamada automática após cadastro, fallback e métricas | Concluída; sucesso real #13, commit/push confirmados |
+| P14 | React/Vite, fila, aceite/correção e persistência da decisão humana | Concluída; **41 testes passaram**, build e testes manuais, commit/push `e5a4119` confirmado no Git |
+| **P15** | **Métricas e avaliação, regressão, segurança, README comercial, auditoria, licença, publicação autorizada** | **Em execução** |
 
-## P13 — evidências principais
+## P15 — ações verificáveis
 
-POST #8: DeepSeek retornou HTTP 401, mas FastAPI preservou cadastro (`201`, `classificacao_falhou`). Correção da variável PowerShell conflitante com `backend/.env` permitiu chamada posterior bem-sucedida. POST #13: `aguardando_revisao`, categoria `suporte_ti`, impacto `equipe`, urgência `alta`, prioridade `alta`, 329 tokens de entrada, 54 de saída, 1.012 ms de latência observada. Conclusão e commit/push P13 confirmados pelo desenvolvedor; hash não informado.
+1. **Concluído:** `backend/evaluation/avaliar_ia.py` e `backend/tests/test_avaliacao.py` instalados; prévia conferiu 10 casos sem API.
+2. **Concluído:** 46 testes Python aprovados, ambiente `pip check` sem requisitos quebrados; `httpx2` mantido no `requirements-dev.txt` conforme testes locais. A adição de `pydantic` em `requirements.txt` foi revisada e aprovada.
+3. **Concluído:** `npm ci`, `npm run build` (25 módulos, 1,16 s) e `npm audit` (0 vulnerabilidades reportadas).
+4. **Concluído:** DeepSeek real, 10/10 respostas; categoria 90%, impacto 90%, urgência 70%, prioridade 90%, completo 60%; 3.289 tokens de entrada, 551 de saída, 1.215 ms de latência média. Custo em dinheiro ainda não calculado.
+5. **Concluído:** divergências C03 e C05 (urgência), C08 (categoria), C09 (impacto, urgência, prioridade) interpretadas como possíveis ambiguidades de política e texto; a resposta específica da LLM não foi armazenada nesse resumo. Baseline mantido.
+6. **Concluído:** `.env` fora do Git; `node_modules` e `dist` ignorados. Gitleaks avaliou 16 commits e cerca de 275 KB, sem segredos detectados.
+7. **Concluído:** licença **MIT** aprovada pelo desenvolvedor; `LICENSE` pronto, atribuição `waldirevora` a conferir antes de salvar.
+8. **Pendente:** copiar documentação completa atualizada, revisar o staging, realizar commit e push da P15 e comprovar Git sincronizado.
+9. **Pendente:** obter autorização separada e explícita antes de tornar o repositório público. A aplicação continuará apenas local, sem deploy público.
 
-## P14 — conceitos e decisões
+## Conceitos importantes
 
-- **React:** biblioteca que renderiza componentes da interface; `useState` guarda estado visual; `useEffect` busca dados ao abrir; `fetch` envia HTTP à FastAPI.
-- **Vite:** servidor de desenvolvimento; o proxy transforma `/api/revisoes` no endpoint real `http://127.0.0.1:8000/revisoes`, evitando CORS local.
-- **Revisão humana (human-in-the-loop):** a IA sugere; o analista valida/corrige. O backend recalcula prioridade pela matriz P12, independentemente do frontend.
-- **Migração SQL 003:** adiciona campos finais e informações de revisão sem apagar registros anteriores. Aplicar nas bases principal e isolada antes dos testes.
-- **Integridade e concorrência:** `SELECT ... FOR UPDATE` mantém bloqueio durante decisão; revisões duplicadas retornam HTTP 409.
-- **Fallback manual:** quando `classificacao_falhou` ou a IA está desativada, o analista pode classificar manualmente em vez de aceitar uma sugestão inexistente.
-- **Segurança:** a chave DeepSeek permanece no backend `.env`. Sem autenticação, manter o MVP exclusivamente em localhost; nenhuma exposição pública.
+- **Acurácia em uma amostra**: fração de classificações iguais aos rótulos de referência; dez exemplos não representam todo o negócio.
+- **Latência**: tempo da chamada de IA; não é o tempo total de navegação ou de ponta a ponta.
+- **Tokens**: unidades processadas/geradas pelo modelo, usadas na cobrança; custo requer tarifa vigente e eventual distinção cache hit/miss.
+- **Fallback**: solicitação permanece salva e a revisão manual segue possível se a IA falhar.
+- **Prompt injection**: tentativa de usar texto não confiável da solicitação para alterar a conduta do modelo; instruções no system prompt são defesa parcial, não garantia.
+- **E2E**: teste ponta a ponta do fluxo real usuário–frontend–backend–banco–revisão.
+- **Publicação de código x deploy**: GitHub público não equivale a aplicação hospedada e segura; sem login não expor o serviço à internet.
 
-## Evidências P14 e ações finais
+## Ambiente
 
-- Migração SQL 003 utilizada no PostgreSQL de desenvolvimento e de testes; o frontend exibiu dados reais da API.
-- Renderização React corrigida adicionando `React` à importação inicial de `frontend/src/App.jsx`.
-- Fluxo manual de revisão testado com sucesso conforme confirmação do desenvolvedor; registros artificiais #6–#11 excluídos via `DELETE /solicitacoes/{id}`.
-- `pytest -q` com `AI_ENABLED=false`: **41 passed in 5.30s**.
-- `npm run build`: Vite **6.4.4**, **25 módulos**, **built in 1.39s**.
-- `git diff --check` identificou **um erro de whitespace** em `docs/PLANO_DE_ESTUDOS_E_DICAS.md:3`; versão 3.61 elimina espaços finais. Avisos de normalização LF/CRLF não bloqueiam commit.
-- Antes do commit: verificar arquivos que serão adicionados, preservar `frontend/package-lock.json`, ignorar `frontend/node_modules/` e `frontend/dist/`, verificar `backend/.env` e estágio; commit e push só depois de verificação limpa.
-- Mensagem sugerida: `feat(web): implementa interface React e revisao humana`.
+Windows PowerShell em `D:\Projects\ai-request-classifier`, Python 3.14.7 em `backend/.venv`, PostgreSQL Windows `127.0.0.1:5433`, banco de produção de laboratório `ai_request_classifier`, banco de testes **destrutivo** `ai_request_classifier_test`; outra instância PostgreSQL Docker em 5432. Se psql não for localizado, usar `$env:Path += ";C:\Program Files\PostgreSQL\18\bin"` na sessão. Vite local porta 5173; FastAPI 8000.
 
-## Ambiente e cautelas
+## Status até o fim
 
-Windows PowerShell em `D:\Projects\ai-request-classifier`; Python 3.14.7 em `backend/.venv`; PostgreSQL Windows 5433 versus Docker 5432. Quando `psql` não for encontrado: `$env:Path += ";C:\Program Files\PostgreSQL\18\bin"`. Bancos: `ai_request_classifier` (desenvolvimento), `ai_request_classifier_test` (testes, TRUNCATE DESTRUTIVO SOMENTE AQUI). `backend/.env` gitignored e deve permanecer sem rastreamento; prompt de continuidade privado também fora do Git. Não expor aplicação sem autenticação a redes públicas.
-
-## Status atual do MVP
-
-**13/15 etapas oficialmente concluídas** (86,7% das etapas, não das funcionalidades). P14 funcionalmente testada, faltam staging seguro, commit e push. P15 pendente: avaliação da IA, métricas, testes ponta a ponta, segurança, documentação comercial, auditoria de histórico, licença e publicação somente com autorização.
+**14/15 etapas concluídas (93,3% por etapas, não por funcionalidades).** A P15 está em fechamento: testes, métricas, análise das divergências e varredura de segredos concluídos. Falta revisão do staging, commit/push e decisão de visibilidade do repositório. O código terá licença MIT; publicar não significa hospedar o sistema.
