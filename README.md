@@ -2,8 +2,6 @@
 
 **Triagem empresarial assistida por inteligência artificial, com prioridade padronizada e revisão humana.**
 
-> **Estado:** MVP local funcional; P01–P14 concluídas. Na P15, **46 testes Python aprovados**, compilação React validada, `npm audit` sem alertas reportados e avaliação real da DeepSeek em 10 casos fictícios com **60% de acerto completo** (10/10 chamadas bem-sucedidas). Varredura Gitleaks no histórico: **16 commits analisados, nenhum segredo detectado**. Licença MIT definida. **P15 aguarda revisão do staging, commit/push e autorização para publicar o repositório. A aplicação não é adequada para hospedagem pública sem controles adicionais.**
-
 ## Qual problema de negócio resolve?
 
 Empresas recebem solicitações internas com qualidade variável e diferentes interpretações de urgência. A triagem exclusivamente manual gera trabalho repetitivo e decisões pouco padronizadas. O AI Request Classifier demonstra como automatizar **uma sugestão de classificação** e manter o analista responsável pela decisão final.
