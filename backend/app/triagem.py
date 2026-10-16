@@ -10,7 +10,9 @@ logger = logging.getLogger(__name__)
 CAMPOS_RETORNO = """id, titulo, descricao, status, criado_em,
     categoria_sugerida, impacto_sugerido, urgencia_sugerida,
     prioridade_sugerida, justificativa_ia, modelo_ia,
-    tokens_entrada, tokens_saida, latencia_ia_ms, classificado_em"""
+    tokens_entrada, tokens_saida, latencia_ia_ms, classificado_em,
+    categoria_final, impacto_final, urgencia_final, prioridade_final,
+    decisao_revisao, observacao_revisao, revisado_em"""
 
 
 def ia_ativa() -> bool:

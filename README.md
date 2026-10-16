@@ -1,137 +1,168 @@
 # AI Request Classifier
 
-Aplicação de triagem de solicitações internas. O MVP permitirá cadastrar chamados, receber sugestões automáticas de classificação e permitir que um analista aceite ou corrija cada sugestão.
+**Triagem de solicitações internas com classificação automática por IA e revisão humana.**
 
-> **Estado em 15/10/2026:** P01–P12 concluídas (25 testes aprovados na P12). **P13 em validação final:** chamada real à DeepSeek com sucesso no POST da solicitação #13, classificação persistida segundo a resposta da API e estado `aguardando_revisao`. O fallback para falha de autenticação também foi observado no POST #8 (`classificacao_falhou`, cadastro mantido). **Ainda faltam confirmar GET posterior, suíte automatizada completa da P13 e commit/push.** React e revisão humana serão implementados na P14. Repositório privado até a auditoria final e autorização.
+> **Estado:** P01–P13 concluídas. **P14 funcionalmente validada no ambiente local**: React renderizando após ajuste de importação, fila e revisão humana testadas, 41 testes Python aprovados e build Vite concluído. Faltam a revisão do staging e o commit/push da P14. P15 (avaliação, métricas, segurança e documentação final) pendente. Repositório privado até decisão expressa de publicação.
 
 ## Problema empresarial
 
-Solicitações internas chegam sem classificação padronizada. Isso exige triagem manual e pode causar encaminhamento inconsistente. O sistema propõe reduzir esse trabalho por meio de sugestões de IA verificáveis e revisão humana; **classificação não equivale a resolver o chamado**.
+Solicitações chegam sem classificação padronizada, gerando triagem manual repetitiva. A solução padroniza o cadastro, solicita à DeepSeek sugestões de categoria, impacto, urgência e justificativa, calcula a prioridade pela política P12 e permite que um analista **aceite ou corrija** o resultado. Classificar não significa resolver o chamado.
 
-## Fluxo alvo
+## Fluxo de negócio e arquitetura
 
 ```mermaid
 flowchart LR
-    A[Funcionário / futuro React] --> B[POST /solicitacoes FastAPI]
-    B --> C[(PostgreSQL: INSERT confirmado)]
-    C --> D[DeepSeek API, se IA habilitada]
-    D --> E[Validar JSON / calcular prioridade]
-    E --> F[(PostgreSQL: sugestão + aguardando_revisao)]
-    D -. Falha .-> G[(PostgreSQL: classificacao_falhou)]
-    F --> H[Analista aceita ou corrige na P14]
-    G --> H
+    A[React: funcionário] -->|POST /solicitacoes| B[FastAPI/Pydantic]
+    B --> C[(PostgreSQL: cadastro)]
+    C --> D[DeepSeek / fallback]
+    D --> E[(PostgreSQL: sugestão)]
+    E --> F[React: fila do analista]
+    F -->|POST /revisoes/id| G[Validação + matriz P12]
+    G --> H[(PostgreSQL: decisão final)]
 ```
 
-A integração implementada na P13 executa a chamada **sincronamente após o COMMIT do cadastro**. O tempo de resposta do POST inclui a latência externa da IA; processamento assíncrono e filas poderão ser estudados após o MVP.
+O cadastro é confirmado antes da chamada à IA. Falhas da IA não apagam solicitações; elas permanecem disponíveis para correção manual. O React **não recebe nem utiliza a chave DeepSeek**: a chamada ao modelo acontece exclusivamente no backend Python.
 
-## Stack
+## Stack e estrutura
 
-Python 3.14 (ambiente local do desenvolvedor), FastAPI, Pydantic, PostgreSQL 18.6 (Windows na porta `5433`), psycopg, python-dotenv, pytest e biblioteca padrão `urllib.request` para a API HTTP DeepSeek.
-
-## Arquivos centrais
+- Backend: Python 3.14, FastAPI, Pydantic, PostgreSQL 18 (Windows `127.0.0.1:5433`), psycopg, pytest.
+- IA: API DeepSeek `deepseek-flash` via HTTPS; classificação automática após o cadastro.
+- Frontend: React 19 + Vite 6, CSS, Fetch API. Ambiente de desenvolvimento local.
 
 ```text
 backend/
   app/
-    main.py                  # inicialização FastAPI e /health
-    database.py              # conexão PostgreSQL e carregamento de .env
-    schemas.py               # entrada HTTP
-    classificacao.py         # taxonomia e matriz determinística P12
-    ia.py                    # chamada LLM e validação JSON P13
-    triagem.py               # orquestração da sugestão após INSERT P13
-    routes/solicitacoes.py   # CRUD, POST com acionamento automático P13
+    main.py                  # instancia FastAPI e registra as rotas
+    database.py              # conexão PostgreSQL e carregamento .env
+    classificacao.py         # enums e matriz de prioridade P12
+    ia.py                    # chamada HTTP DeepSeek P13
+    triagem.py               # persistência de sugestões P13/P14
+    schemas.py               # entrada de solicitações P11
+    schemas_revisao.py       # contrato de revisão P14
+    routes/
+      solicitacoes.py        # CRUD e acionamento automático P13
+      revisoes.py            # fila + decisões finais P14
   sql/
     001_create_solicitacoes.sql
     002_add_classificacao_ia.sql
-  tests/
-    test_api.py
-    test_classificacao.py
-    test_ia.py
-    test_triagem.py
+    003_add_revisao_humana.sql
   evaluation/casos_referencia.json
-  .env.example
+  tests/                     # testes API, IA, regras, triagem e revisão
+  .env.example               # configuração de exemplo sem chave real
   requirements.txt
   requirements-dev.txt
+frontend/
+  package.json
+  vite.config.js             # proxy /api para FastAPI local
+  src/
+    api.js                   # cliente HTTP da nossa API
+    App.jsx                  # formulário, fila e revisão
+    main.jsx
+    styles.css
 docs/
   ARQUITETURA.md
   CRITERIOS_CLASSIFICACAO.md
   PLANO_DE_ESTUDOS_E_DICAS.md
 ```
 
-## Configuração local (PowerShell)
+## Instruções locais (Windows PowerShell)
 
-Na raiz do repositório:
+Pré-requisitos: PostgreSQL de desenvolvimento e teste já preparados até a migração 002; Python do backend na `.venv`; Node.js instalado para o Vite. **Não recriar bancos existentes e não copiar credenciais para o Git.**
+
+### 1. Migrar esquema P14 (uma vez por banco)
+
+Na **raiz** do projeto, com `psql` disponível no PATH:
 
 ```powershell
 cd D:\Projects\ai-request-classifier
-.\backend\.venv\Scripts\python.exe -m pip install -r .\backend\requirements-dev.txt
+$env:Path += ";C:\Program Files\PostgreSQL\18\bin"
+psql -U postgres -h 127.0.0.1 -p 5433 -d ai_request_classifier -v ON_ERROR_STOP=1 -f .\backend\sql\003_add_revisao_humana.sql
+psql -U postgres -h 127.0.0.1 -p 5433 -d ai_request_classifier_test -v ON_ERROR_STOP=1 -f .\backend\sql\003_add_revisao_humana.sql
 ```
 
-O arquivo `backend/.env` contém a senha PostgreSQL e, quando habilitada, a chave de API da DeepSeek. **Nunca versione `.env`.** Adicione as variáveis `AI_ENABLED`, `DEEPSEEK_API_KEY` e `AI_MODEL` ao `.env` existente a partir de `.env.example`, preservando suas credenciais PostgreSQL.
+Migração incremental: acrescenta campos finais e a decisão do analista; não apaga dados já existentes. O segundo banco é reservado aos testes, que usam `TRUNCATE`: **não armazene dados importantes nele.**
 
-A configuração de IA inicia desligada:
+### 2. FastAPI
 
-```dotenv
-AI_ENABLED=false
-DEEPSEEK_API_KEY=SUBSTITUA_LOCALMENTE
-AI_MODEL=deepseek-flash
-```
-
-### Migração incremental da P13
-
-Depois de confirmar o banco correto, executar **nos dois bancos**:
-
-```powershell
-psql -U postgres -h 127.0.0.1 -p 5433 -d ai_request_classifier -v ON_ERROR_STOP=1 -f .\backend\sql\002_add_classificacao_ia.sql
-psql -U postgres -h 127.0.0.1 -p 5433 -d ai_request_classifier_test -v ON_ERROR_STOP=1 -f .\backend\sql\002_add_classificacao_ia.sql
-```
-
-Não recrie as bases nem execute `TRUNCATE` no banco de desenvolvimento.
-
-### Testes sem custo de IA
-
-Na pasta `backend`, mantenha `AI_ENABLED=false` para a suíte existente. Os novos testes de integração usam IA simulada (mock):
-
-```powershell
-cd backend
-$env:AI_ENABLED = "false"
-.\.venv\Scripts\python.exe -m pytest -q
-Remove-Item Env:\AI_ENABLED
-```
-
-Os testes com PostgreSQL limpam o banco **exclusivo** `ai_request_classifier_test`. Confirme que ele não contém dados importantes. **A suíte completa após a integração real da P13 ainda precisa ser confirmada pelo desenvolvedor.**
-
-### Teste real da integração
-
-Configure uma chave válida em `backend/.env`, altere `AI_ENABLED=true`, inicie:
+Em um terminal:
 
 ```powershell
 cd D:\Projects\ai-request-classifier\backend
 .\.venv\Scripts\python.exe -m uvicorn app.main:app --reload
 ```
 
-Abra `http://127.0.0.1:8000/docs` e execute `POST /solicitacoes` com dados fictícios. A resposta esperada após chamada válida tem `status=aguardando_revisao`, categoria, impacto, urgência, prioridade e justificativa. **Observado no POST #13:** `suporte_ti`, impacto `equipe`, urgência `alta`, prioridade `alta`, 329 tokens de entrada, 54 tokens de saída e latência de 1.012 ms. **O GET posterior ainda precisa ser confirmado.** Caso a API externa falhe, o cadastro deve permanecer com `status=classificacao_falhou`, como ocorreu com o POST #8 após HTTP 401. Sem IA habilitada, mantém `pendente_classificacao`.
+- Swagger: http://127.0.0.1:8000/docs
+- Health: http://127.0.0.1:8000/health
 
-## Endpoints atuais
+Em `backend/.env`, o uso da DeepSeek depende de `AI_ENABLED=true`, `DEEPSEEK_API_KEY` válida e `AI_MODEL=deepseek-flash`. Para rodar sem custos de IA, use `AI_ENABLED=false`: o analista poderá classificar manualmente solicitações pendentes.
 
-| Método | Rota | Função |
+### 3. React + Vite
+
+Em **outro terminal**:
+
+```powershell
+cd D:\Projects\ai-request-classifier\frontend
+npm install
+npm run dev
+```
+
+Abra http://127.0.0.1:5173/. O Vite encaminha chamadas `/api/*` para `http://127.0.0.1:8000/*` durante o desenvolvimento. Isso evita configurar CORS apenas para o ambiente local. **Build P14 validado no Windows:** Vite 6.4.4, 25 módulos transformados, compilação em 1,39 s. A tela vazia inicial foi corrigida adicionando `React` à importação de `frontend/src/App.jsx`. Versionar `frontend/package-lock.json`, mas jamais `frontend/node_modules/` ou `frontend/dist/`.
+
+### 4. Testes
+
+Com o PostgreSQL **de testes** acessível, em terminal separado:
+
+```powershell
+cd D:\Projects\ai-request-classifier\backend
+$env:AI_ENABLED = "false"
+.\.venv\Scripts\python.exe -m pytest -q
+Remove-Item Env:\AI_ENABLED -ErrorAction SilentlyContinue
+```
+
+Os testes P14 simulam situações com e sem sugestão: aceitar, corrigir, fallback manual, validação de entrada, impedir revisão repetida, fila e histórico. Não utilizam créditos da DeepSeek. **Evidência registrada na P14: 41 testes aprovados em 5,30 s no Windows** (`AI_ENABLED=false`).
+
+## Contrato HTTP
+
+| Método | Caminho | Função |
 |---|---|---|
-| GET | `/health` | Saúde básica |
-| POST | `/solicitacoes` | Grava, tenta IA automaticamente se habilitada e retorna cadastro |
-| GET | `/solicitacoes` | Lista registros e sugestões |
-| GET | `/solicitacoes/{id}` | Consulta |
-| PUT | `/solicitacoes/{id}` | Edita título/descrição (não reclassifica) |
-| DELETE | `/solicitacoes/{id}` | Remove |
+| GET | `/health` | Estado básico da API |
+| POST | `/solicitacoes` | Cadastro + tentativa automática de IA |
+| GET | `/solicitacoes` | Lista com sugestões e decisões finais |
+| GET | `/solicitacoes/{id}` | Detalhe |
+| PUT | `/solicitacoes/{id}` | Atualização de título/descrição, sem reclassificação |
+| DELETE | `/solicitacoes/{id}` | Exclusão |
+| GET | `/revisoes/pendentes` | Fila de análise (`aguardando_revisao`, `classificacao_falhou`, `pendente_classificacao`) |
+| GET | `/revisoes/concluidas` | Histórico de revisões finalizadas |
+| POST | `/revisoes/{id}` | Aceita sugestão ou registra correção manual |
 
-## Regras e métricas
+Aceite:
 
-- Categorias: TI, Acessos, Financeiro, RH e Outros (códigos em `classificacao.py`).
-- O modelo propõe categoria, impacto, urgência e justificativa. O backend valida esses campos com Pydantic.
-- A prioridade final é **determinística**, calculada pela matriz da P12.
-- O sistema registra modelo, tokens reportados e tempo de resposta em milissegundos. **Uma amostra real observada:** 329 tokens de entrada, 54 tokens de saída e 1.012 ms; uma execução não representa a latência típica. Custo por classificação e estatísticas de desempenho ainda precisam ser medidos.
-- Dados do chamado são enviados à API externa quando habilitada: usar **somente dados fictícios** durante o exercício e nunca enviar segredos ou dados pessoais reais.
-- Não há autenticação, autorização, workflow de revisão concluído, controle de reprocessamento ou mecanismo de fila. **Não expor a API à internet.**
+```json
+{"decisao":"aceitar"}
+```
 
-## Próximas etapas
+Correção:
 
-P13: confirmar GET da solicitação #13, testes de regressão e commit/push; P14: React e revisão humana; P15: avaliação com os 10 casos da P12, qualidade, documentação comercial, medidas reais, auditoria de segredos, licença e publicação somente após autorização expressa.
+```json
+{
+  "decisao": "corrigir",
+  "categoria": "acessos_permissoes",
+  "impacto": "individual",
+  "urgencia": "alta",
+  "observacao": "Bloqueio de permissão para uma pessoa."
+}
+```
+
+Em ambos os casos o backend calcula a prioridade pela matriz P12 e persiste os campos `*_final` e `decisao_revisao`, preservando os campos originais `*_sugerida`. Uma revisão concluída não pode ser repetida (`409`).
+
+## Limitações e segurança
+
+Este MVP **não possui login, autorização por perfil, identificação auditável de quem revisou nem proteção de acesso remoto**. **Use somente localhost e dados fictícios; não exponha a API ou interface à internet.** As credenciais ficam no `.env` ignorado pelo Git. Antes de produção/publicação serão necessários revisão de segurança, controles de acesso, política de dados, auditoria do Git, licença e medições de custo/latência com amostra representativa.
+
+## Roadmap
+
+- **P01–P13:** backend, PostgreSQL, matriz P12 e IA automática — concluídos.
+- **P14:** frontend React, fila e revisão humana — integração e testes locais validados; resta revisar Git, fazer commit e push.
+- **P15:** avaliação com casos de referência, testes ponta a ponta, métricas, segurança e documentação comercial; publicação somente com autorização expressa.
+
+Detalhes: [Arquitetura](docs/ARQUITETURA.md), [Critérios de classificação](docs/CRITERIOS_CLASSIFICACAO.md) e [Plano de estudos](docs/PLANO_DE_ESTUDOS_E_DICAS.md).

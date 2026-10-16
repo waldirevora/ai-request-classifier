@@ -1,99 +1,99 @@
-# Arquitetura técnica — AI Request Classifier
+# Arquitetura | AI Request Classifier
 
-**Referência (15/10/2026):** P12 concluída; P13 em validação final. O desenvolvedor confirmou um POST real com `aguardando_revisao` e campos de IA preenchidos (id=13), além de fallback preservando o cadastro após HTTP 401 (id=8). GET posterior, execução da suíte automatizada após a P13 e commit/push ainda não foram confirmados.
+**Referência:** P13 concluída; **P14 validada funcionalmente em localhost** (revisão humana manual, 41 testes Python aprovados, build React/Vite aprovado). Aguarda revisão de staging, commit e push. GitHub privado durante o desenvolvimento.
 
-## 1. Problema e escopo
+## Objetivo empresarial
 
-O sistema registra solicitações internas, sugere triagem por IA e permite revisão por analista. Uma sugestão de categoria ou prioridade **não conclui nem resolve** a solicitação.
+Padronizar solicitações internas; usar DeepSeek para **sugerir**, e um analista para **aceitar ou corrigir** a triagem. A classificação determina categoria e prioridade; não resolve o chamado.
 
-## 2. Fluxo técnico e regra empresarial
+## Diagrama ponta a ponta
 
 ```mermaid
 flowchart TD
-    A[Funcionário / cliente HTTP; React na P14] --> B[POST /solicitacoes FastAPI]
-    B --> C[Pydantic valida título e descrição]
-    C --> D[(PostgreSQL INSERT + COMMIT)]
-    D --> E{AI_ENABLED=true?}
-    E -- Não --> F[pendente_classificacao]
-    E -- Sim --> G[ia.py chama DeepSeek via HTTPS]
-    G --> H[JSON validado por Pydantic]
-    H --> I[calcular_prioridade: matriz P12]
-    I --> J[(UPDATE: aguardando_revisao)]
-    G -. Timeout/erro .-> K[(UPDATE: classificacao_falhou)]
-    J -. P14 .-> L[Analista aceita/corrige no React]
-    K -. P14 .-> L
+  A[Funcionário: React formulário] -->|fetch POST /api/solicitacoes| B[Vite proxy de desenvolvimento]
+  B -->|POST /solicitacoes| C[FastAPI e Pydantic]
+  C --> D[(PostgreSQL: INSERT e COMMIT)]
+  D --> E[triagem.py → ia.py]
+  E -->|HTTPS POST + Bearer API key| F[DeepSeek LLM]
+  F --> G[Pydantic: categoria, impacto, urgência]
+  G --> H[classificacao.py: matriz P12]
+  H --> I[(PostgreSQL: sugestão, aguardando_revisao)]
+  E -. erro ou timeout .-> J[(PostgreSQL: classificacao_falhou)]
+  I --> K[React: fila de revisão]
+  J --> K
+  K -->|POST /api/revisoes/id| B
+  C --> L[schemas_revisao.py: validar decisão]
+  L --> M[revisoes.py: SELECT FOR UPDATE]
+  M --> N[(PostgreSQL: campos finais, revisada)]
 ```
 
-**Decisão central:** o cadastro é confirmado no PostgreSQL **antes** da chamada à IA, em transações diferentes. Uma falha externa não apaga o registro original. O POST espera a resposta externa quando a IA está ativada; essa sincronização é adequada ao MVP didático, não a uma solução escalável comprovada.
+Em desenvolvimento, o navegador chama `/api` na origem do Vite (`5173`), e o Vite encaminha para a FastAPI (`8000`). Isso é **proxy reverso local**, não uma implantação de produção. O frontend **nunca chama a DeepSeek** nem precisa da chave dela.
 
-## 3. Módulos
+## Responsabilidades dos módulos
 
 | Arquivo | Responsabilidade |
 |---|---|
-| `app/main.py` | FastAPI e endpoint `/health` |
-| `app/schemas.py` | Validação dos dados do cliente |
-| `app/database.py` | Conexão PostgreSQL + leitura do `.env` |
-| `app/classificacao.py` | Enums e matriz de prioridade da P12 |
-| `app/ia.py` | Construção do prompt, HTTPS, parsing e validação da resposta da LLM |
-| `app/triagem.py` | Persistência da sugestão ou sinalização de falha |
-| `app/routes/solicitacoes.py` | CRUD preservado; POST chama triagem após COMMIT |
-| `sql/002_add_classificacao_ia.sql` | Migração incremental das colunas de sugestão |
-| `tests/test_ia.py` | JSON e HTTP simulados, sem consumo real de API |
-| `tests/test_triagem.py` | Integração da triagem com banco isolado e IA simulada |
+| `frontend/src/App.jsx` | Formulário, estado React, seleção e decisão do analista |
+| `frontend/src/api.js` | `fetch` para FastAPI, JSON e tratamento de erros HTTP |
+| `frontend/vite.config.js` | Proxy `/api` → FastAPI local |
+| `backend/app/main.py` | Cria FastAPI e inclui routers `/solicitacoes` e `/revisoes` |
+| `backend/app/routes/solicitacoes.py` | CRUD, insere e aciona `processar_solicitacao()` P13 |
+| `backend/app/schemas.py` | Valida entrada do cadastro |
+| `backend/app/database.py` | Conexão psycopg e `.env` local |
+| `backend/app/ia.py` | Chamada HTTPS DeepSeek, JSON estruturado e validação |
+| `backend/app/triagem.py` | Orquestra IA, fallback e projeção dos campos retornados |
+| `backend/app/classificacao.py` | Taxonomia/`Enum` e matriz determinística de prioridade |
+| `backend/app/schemas_revisao.py` | Contrato de aceite/correção com Pydantic |
+| `backend/app/routes/revisoes.py` | Fila, histórico, transação de revisão e cálculo final |
+| `backend/sql/003_add_revisao_humana.sql` | Novas colunas de resultado final e metadados da decisão |
+| `backend/tests/test_revisoes.py` | Testes integrados no PostgreSQL isolado, sem LLM real |
 
-## 4. Persistência
+## Fluxo da revisão humana
 
-Banco principal: `ai_request_classifier`, PostgreSQL Windows em `127.0.0.1:5433`. Banco de testes: `ai_request_classifier_test`. **Não confundir com PostgreSQL Docker na porta 5432.**
+**Aceitar:** somente quando `status=aguardando_revisao`, com sugestão completa. O backend copia categoria, impacto e urgência sugeridos e **recalcula** a prioridade pela matriz P12.
 
-Tabela `solicitacoes`, colunas da P11:
+**Corrigir:** permitido em `aguardando_revisao`, `classificacao_falhou` ou `pendente_classificacao`. O analista informa categoria, impacto, urgência e motivo com pelo menos 10 caracteres. O backend valida os `Enum` e calcula a prioridade.
 
-| Coluna | Tipo |
-|---|---|
-| `id` | BIGINT IDENTITY PRIMARY KEY |
-| `titulo` | VARCHAR(120), validado |
-| `descricao` | TEXT, validado |
-| `status` | VARCHAR(40) com padrão `pendente_classificacao` |
-| `criado_em` | TIMESTAMPTZ |
+**Persistir:** dentro de uma transação SQL, `SELECT ... FOR UPDATE` bloqueia o registro enquanto a decisão é gravada. A segunda tentativa de revisar um registro já finalizado recebe `409 Conflict`, evitando sobrescrita silenciosa.
 
-A P13 acrescenta colunas opcionais sem apagar dados preexistentes: `categoria_sugerida`, `impacto_sugerido`, `urgencia_sugerida`, `prioridade_sugerida`, `justificativa_ia`, `modelo_ia`, `tokens_entrada`, `tokens_saida`, `latencia_ia_ms`, `classificado_em`.
+**Resposta:** `status=revisada`, `categoria_final`, `impacto_final`, `urgencia_final`, `prioridade_final`, `decisao_revisao`, `observacao_revisao`, `revisado_em`. As sugestões originais da IA continuam armazenadas para comparação.
 
-Estados utilizados na P13:
+## Evolução do esquema
 
-| Estado | Condição |
-|---|---|
-| `pendente_classificacao` | IA desabilitada; somente cadastro |
-| `aguardando_revisao` | Sugestão da IA validada e persistida |
-| `classificacao_falhou` | Erro externo ou resultado inválido; cadastro preservado |
+`001_create_solicitacoes.sql`: id, título, descrição, status e criação.
 
-Os estados finais após decisão humana serão definidos na P14.
+`002_add_classificacao_ia.sql`: sugestões, justificativa, modelo, tokens, latência e timestamp de classificação.
 
-## 5. Contrato com a IA
+`003_add_revisao_humana.sql`: `categoria_final VARCHAR(32)`, `impacto_final VARCHAR(16)`, `urgencia_final VARCHAR(16)`, `prioridade_final VARCHAR(8)`, `decisao_revisao VARCHAR(16)`, `observacao_revisao VARCHAR(500)` e `revisado_em TIMESTAMPTZ`. Todas novas colunas são inicialmente nulas para preservar registros existentes.
 
-Provedor didático: DeepSeek; endpoint HTTPS `/chat/completions`, modelo configurável `deepseek-flash`. O backend solicita um objeto JSON com **categoria, impacto, urgência e justificativa**, sem pedir a prioridade, calculada em Python segundo a matriz da P12.
+Migração 003 incremental e não destrutiva. Aplicar **primeiro** no PostgreSQL Windows `127.0.0.1:5433`, nos bancos `ai_request_classifier` e `ai_request_classifier_test`, antes de iniciar o novo backend. Não confundir com a instância Docker na porta 5432.
 
-Exemplo de resposta esperada:
+## Estados de negócio
 
-```json
-{
-  "categoria": "suporte_ti",
-  "impacto": "equipe",
-  "urgencia": "alta",
-  "justificativa": "Equipe impedida de acessar o sistema durante o expediente."
-}
-```
+| Estado | Significado | Ação na P14 |
+|---|---|---|
+| `pendente_classificacao` | IA desabilitada / ainda não processado | Correção/classificação manual |
+| `aguardando_revisao` | IA gerou sugestão | Aceitar ou corrigir |
+| `classificacao_falhou` | Falha da LLM após cadastro | Correção/classificação manual |
+| `revisada` | Decisão humana registrada | Visualizar no histórico; não revisar novamente |
 
-Validação: Enums restringem categoria/impacto/urgência; Pydantic rejeita campos extras ou justificativas fora dos limites; respostas vazias ou truncadas não são usadas. O título/descrição são tratados no prompt como **dados não confiáveis**, sem executar instruções presentes neles. O modelo pode errar semanticamente mesmo devolvendo JSON válido; a revisão humana é obrigatória no MVP.
+## Contratos de API da revisão
 
-## 6. Confiabilidade e limites
+`GET /revisoes/pendentes` e `GET /revisoes/concluidas` devolvem listas; `POST /revisoes/{id}` recebe `{"decisao":"aceitar"}` ou `{"decisao":"corrigir","categoria":"suporte_ti","impacto":"equipe","urgencia":"alta","observacao":"Justificativa válida..."}`.
 
-- Chave da API somente em `.env` local; `.env.example` nunca contém segredo real.
-- Timeout de 12 segundos na chamada; uma falha externa não provoca rollback do INSERT já confirmado.
-- Testes são executados com IA simulada para não depender de rede, cota ou cobrança externa.
-- O PostgreSQL de testes é truncado apenas após checagem do nome do banco.
-- `urllib.request` usa conexão HTTPS; métricas de tokens e latência são registradas quando disponíveis. Uma execução real com a DeepSeek reportou 329 tokens de entrada, 54 de saída e 1.012 ms; média de latência e custos ainda não foram medidos.
-- Nesta versão, falha na persistência do resultado pode deixar a solicitação no estado inicial, exigindo diagnóstico administrativo. Retentativas, idempotência, fila e monitoramento não estão implementados.
-- Ainda não existem controle de acesso, limitação de requisições, logs de auditoria ou proteção apropriada para dados sensíveis. Somente ambiente de desenvolvimento e informações fictícias.
+`404`: ID inexistente. `409`: revisão duplicada, sugestão ausente para aceite ou estado incompatível. `422`: corpo ou valores inválidos. O servidor é a fonte de verdade, mesmo quando o React verifica os campos antes de enviar.
 
-## 7. Próximas entregas
+## Testes e segurança
 
-P13: confirmar GET após o POST #13, suíte completa de testes com banco isolado, revisão do staging e commit/push; P14: endpoints e frontend React de revisão humana; P15: avaliação de acurácia, métricas, testes finais, privacidade, auditoria do Git, licença e eventual publicação autorizada.
+A suíte de integração usa banco exclusivo `ai_request_classifier_test`, verificado **antes** de `TRUNCATE TABLE ... RESTART IDENTITY`. A IA permanece desativada/simulada para não consumir créditos. Validar também manualmente: cadastrar, revisar, atualizar a página e confirmar persistência do resultado.
+
+**Limitações conscientes do MVP:** sem autenticação, identificação do analista, política de acesso, paginação, reprocessamento automático, fila assíncrona, SLA ou tratamento de concorrência de alterações em título/descrição. O `FOR UPDATE` cobre concorrência entre revisões, não todas as operações CRUD. **Não expor à internet.** P15 tratará avaliação, auditoria e recomendações de segurança; não alegar segurança de produção.
+
+## Evidências e ressalvas da P14 (15/10/2026)
+
+- `pytest -q` com `AI_ENABLED=false`: **41 passed in 5.30s**, utilizando banco isolado de testes.
+- `npm run build`: **25 módulos transformados**, Vite 6.4.4, **built in 1.39s**.
+- Tela vazia inicial resolvida com importação explícita de `React` em `frontend/src/App.jsx`.
+- Desenvolvedor confirmou fluxo de revisão humana, persistência e exclusão seletiva dos registros de teste #6–#11.
+- Esses resultados não constituem auditoria de segurança, teste de carga nem validação de produção.
+- **P14 permanece aberta até confirmação de commit e push.**
