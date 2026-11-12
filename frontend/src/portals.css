@@ -1,0 +1,360 @@
+.sf-shell {
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+}
+.sf-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  padding: 24px max(24px, calc((100vw - 1400px) / 2));
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+}
+.sf-brand {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  color: inherit;
+  text-decoration: none;
+}
+.sf-brand strong {
+  font-size: 24px;
+  letter-spacing: -0.7px;
+}
+.sf-brand small {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 4px;
+}
+.sf-tools {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+.sf-tools label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.sf-main {
+  max-width: 1400px;
+  margin: auto;
+  padding: 40px 32px;
+  outline: none;
+}
+.sf-welcome {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 70px;
+  align-items: center;
+  padding: 40px 0;
+}
+.sf-welcome h1 {
+  font-size: clamp(36px, 4vw, 60px);
+  line-height: 1.1;
+  letter-spacing: -2px;
+}
+.sf-welcome p {
+  max-width: 580px;
+  line-height: 1.8;
+}
+.sf-steps {
+  margin: 32px 0;
+  color: var(--muted);
+  line-height: 2;
+}
+.sf-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 28px;
+}
+.sf-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 14px;
+}
+.sf-form input,
+.sf-form select,
+.sf-form textarea,
+.sf-tabs button,
+.sf-list-heading select,
+.sf-tools select {
+  min-height: 44px;
+}
+.sf-form input,
+.sf-form select,
+.sf-form textarea {
+  width: 100%;
+  padding: 12px;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.sf-create {
+  max-width: 780px;
+  margin: 32px auto;
+}
+.sf-page-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+.sf-page-heading h1 {
+  font-size: 34px;
+  letter-spacing: -1px;
+  margin: 8px 0;
+}
+.sf-page-heading p {
+  color: var(--muted);
+}
+.sf-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 20px;
+  margin-bottom: 28px;
+}
+.sf-tabs button {
+  padding: 10px 18px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+  border-radius: 8px;
+}
+.sf-tabs button.active {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+.sf-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+  margin: 24px 0;
+}
+.sf-metrics .card {
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.sf-metrics strong {
+  font-size: 36px;
+}
+.sf-metrics span {
+  color: var(--muted);
+}
+.sf-workspace {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+}
+.sf-workspace.has-detail {
+  grid-template-columns: minmax(280px, 0.85fr) minmax(0, 1.5fr);
+}
+.sf-list {
+  align-self: start;
+  overflow: hidden;
+}
+.sf-list-heading {
+  padding: 24px;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+.sf-list-item {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-align: left;
+  width: 100%;
+  padding: 24px;
+  border: 0;
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+}
+.sf-list-item:hover,
+.sf-list-item.active {
+  background: var(--surface-alt);
+}
+.sf-list-item span,
+.sf-list-item small {
+  color: var(--muted);
+}
+.sf-empty {
+  padding: 24px;
+  line-height: 1.8;
+  color: var(--muted);
+}
+.sf-detail {
+  padding: 28px;
+  min-width: 0;
+}
+.sf-detail h2 {
+  font-size: 26px;
+  line-height: 1.4;
+  margin: 16px 0;
+}
+.sf-detail .eyebrow {
+  margin-top: 24px;
+}
+.sf-description {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.8;
+}
+.sf-result {
+  padding: 20px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  margin: 20px 0;
+}
+.sf-result p {
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+.sf-result dl {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.sf-result dd {
+  margin: 0;
+  font-weight: 600;
+}
+.sf-result dt {
+  color: var(--muted);
+}
+.sf-timeline {
+  padding-left: 24px;
+}
+.sf-timeline li {
+  padding: 10px 0 18px;
+}
+.sf-timeline time {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 6px;
+}
+.sf-learning {
+  padding: 32px;
+}
+.sf-footer {
+  text-align: center;
+  padding: 30px;
+  color: var(--muted);
+  font-size: 12px;
+  border-top: 1px solid var(--line);
+}
+.classic-return {
+  position: fixed;
+  bottom: 12px;
+  right: 12px;
+  z-index: 1000;
+  padding: 12px;
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  border: 2px solid var(--accent);
+}
+@media (max-width: 1000px) {
+  .sf-welcome {
+    gap: 28px;
+  }
+  .sf-header {
+    padding: 20px;
+  }
+  .sf-tools {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+  .sf-workspace.has-detail {
+    grid-template-columns: 1fr;
+  }
+  .sf-workspace.has-detail .sf-list {
+    display: none;
+  }
+}
+@media (max-width: 650px) {
+  .sf-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .sf-tools {
+    width: 100%;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .sf-tools .badge {
+    font-size: 10px;
+  }
+  .sf-brand small {
+    font-size: 10px;
+  }
+  .sf-main {
+    padding: 24px 16px;
+  }
+  .sf-welcome {
+    grid-template-columns: 1fr;
+    padding: 10px 0;
+    gap: 30px;
+  }
+  .sf-welcome h1 {
+    font-size: 40px;
+  }
+  .sf-form,
+  .sf-detail,
+  .sf-learning {
+    padding: 20px;
+  }
+  .sf-metrics {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  .sf-metrics .card {
+    padding: 16px;
+  }
+  .sf-metrics strong {
+    font-size: 28px;
+  }
+  .sf-page-heading h1 {
+    font-size: 28px;
+  }
+  .sf-page-heading {
+    align-items: flex-start;
+  }
+  .sf-tabs {
+    gap: 8px;
+  }
+  .sf-tabs button {
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+  .sf-result {
+    padding: 16px;
+  }
+  .sf-result dl {
+    font-size: 13px;
+  }
+  .sf-list-heading {
+    padding: 20px;
+  }
+  .sf-tools select {
+    max-width: 130px;
+  }
+}

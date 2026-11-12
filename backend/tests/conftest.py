@@ -6,6 +6,7 @@ from app import ia
 @pytest.fixture(autouse=True)
 def bloquear_ia_real(monkeypatch):
     monkeypatch.setenv("AI_ENABLED", "false")
+    monkeypatch.setenv("SF_SECURE_LEGACY", "false")
     monkeypatch.setenv("DEEPSEEK_API_KEY", "CHAVE_FICTICIA_SEM_CREDITOS")
 
     def rede_bloqueada(*args, **kwargs):

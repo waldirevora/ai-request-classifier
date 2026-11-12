@@ -1,11 +1,12 @@
 """Fila de revisão humana e decisões persistidas no PostgreSQL.
 
-Sem autenticação: SOMENTE ambiente local, até implementar controle de acesso.
+Acesso clássico restrito à central local por dependência no app principal.
 """
 from fastapi import APIRouter, HTTPException
 
 from app.classificacao import Impacto, Urgencia, calcular_prioridade
 from app.database import conectar
+from app.identity import classic_filter
 from app.schemas_revisao import RevisaoEntrada
 from app.triagem import CAMPOS_RETORNO
 
@@ -20,7 +21,7 @@ def listar_pendentes():
     with conectar() as conn:
         return conn.execute(
             f"""SELECT {CAMPOS_RETORNO} FROM solicitacoes
-                WHERE status IN (%s, %s, %s) ORDER BY criado_em, id""",
+                WHERE status IN (%s, %s, %s) {classic_filter()} ORDER BY criado_em, id""",
             PENDENTES,
         ).fetchall()
 
@@ -30,7 +31,7 @@ def listar_concluidas():
     with conectar() as conn:
         return conn.execute(
             f"""SELECT {CAMPOS_RETORNO} FROM solicitacoes
-                WHERE status = %s ORDER BY revisado_em DESC, id DESC""",
+                WHERE status = %s {classic_filter()} ORDER BY revisado_em DESC, id DESC""",
             ("revisada",),
         ).fetchall()
 
