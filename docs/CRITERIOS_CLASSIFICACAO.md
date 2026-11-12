@@ -1,4 +1,4 @@
-# Critérios de classificação | AI Request Classifier
+# Critérios de classificação | SolicitaFlow
 
 **Versão:** P12 / atualização 3.52 — 15/10/2026
 **Estado:** proposta didática, ainda não conectada à API nem validada por especialistas da empresa.

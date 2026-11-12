@@ -1,4 +1,4 @@
-# Arquitetura | AI Request Classifier
+# Arquitetura | SolicitaFlow
 
 **Estado:** MVP funcional local até P14; P15 em validação. Não está preparado para implantação pública.
 

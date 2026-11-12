@@ -166,15 +166,14 @@ export default function App() {
               e.preventDefault();
               navigate("overview", true);
             }}
-            aria-label="AI Request Classifier — visão geral"
+            aria-label="SolicitaFlow — visão geral"
           >
-            <span className="brand-icon">AC</span>
+            <span className="brand-icon">SF</span>
             <span>
               <strong>
-                AI Request
-                <br /> Classifier
+                SolicitaFlow
               </strong>
-              <small>Contexto para decidir.</small>
+              <small>Do pedido à resolução.</small>
             </span>
           </a>
           <p className="nav-label">CENTRAL DE SOLICITAÇÕES</p>
@@ -343,7 +342,7 @@ export default function App() {
             </div>
           </main>
           <footer className="app-footer">
-            <span>AI Request Classifier</span>
+            <span>SolicitaFlow</span>
             <span>
               Dados fictícios · Uso local controlado · Decisões humanas
             </span>

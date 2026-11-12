@@ -1,10 +1,12 @@
-# AI Request Classifier
+> Evolução do AI Request Classifier. Marca atual: **SolicitaFlow** — Solicitações inteligentes, do pedido à resolução.
+
+# SolicitaFlow
 
 **Triagem empresarial assistida por inteligência artificial, com prioridade padronizada e revisão humana.**
 
 ## Qual problema de negócio resolve?
 
-Empresas recebem solicitações internas com qualidade variável e diferentes interpretações de urgência. A triagem exclusivamente manual gera trabalho repetitivo e decisões pouco padronizadas. O AI Request Classifier demonstra como automatizar **uma sugestão de classificação** e manter o analista responsável pela decisão final.
+Empresas recebem solicitações internas com qualidade variável e diferentes interpretações de urgência. A triagem exclusivamente manual gera trabalho repetitivo e decisões pouco padronizadas. O SolicitaFlow demonstra como automatizar **uma sugestão de classificação** e manter o analista responsável pela decisão final.
 
 O MVP foi desenvolvido como projeto prático de Engenharia de Software e Engenharia de IA. Não automatiza a resolução de chamados.
 

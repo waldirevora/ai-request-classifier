@@ -1,4 +1,4 @@
-# GUIA | AI Request Classifier
+# GUIA | SolicitaFlow
 
 **Documento oficial:** `docs/GUIA.md` (nome e caminho permanentes; sempre substituir o conteúdo integral).
 **Etapa:** P15 em execução. **Projeto privado.**
