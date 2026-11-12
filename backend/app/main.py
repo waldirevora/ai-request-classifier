@@ -1,10 +1,10 @@
-"""Ponto de entrada FastAPI do AI Request Classifier."""
+"""Ponto de entrada FastAPI do SolicitaFlow."""
 from fastapi import FastAPI
 
 from app.routes.revisoes import router as revisoes_router
 from app.routes.solicitacoes import router as solicitacoes_router
 
-app = FastAPI(title="AI Request Classifier", version="0.14.0")
+app = FastAPI(title="SolicitaFlow", version="0.14.0")
 app.include_router(solicitacoes_router)
 app.include_router(revisoes_router)
 
