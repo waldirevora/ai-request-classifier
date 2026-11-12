@@ -1,6 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { useTheme } from "./useTheme.js";
-import { portalApi, statusLabels } from "./portal-api.js";
+import {
+  portalApi,
+  statusLabels,
+  eventLabels,
+  reasonLabels,
+} from "./portal-api.js";
 import App from "./App.jsx";
 import { LabGuide } from "./LabGuide.jsx";
 import { WorkPanel, OperationalReports } from "./Operations.jsx";
@@ -629,7 +634,7 @@ export default function Portals() {
                                 ? "Decisão humana"
                                 : "Encaminhamento automático"}
                             {d.reasons.length
-                              ? `: ${d.reasons.join(" · ")}`
+                              ? `: ${d.reasons.map((reason) => reasonLabels[reason] || reason).join(" · ")}`
                               : " · destino validado pelas regras"}
                           </p>
                         ))}
@@ -762,8 +767,18 @@ export default function Portals() {
                       <ol className="sf-timeline">
                         {selected.events.map((e) => (
                           <li key={e.id}>
-                            <strong>{e.type.replaceAll("_", " ")}</strong>
-                            <time>{format(e.created_at)}</time>
+                            <strong>
+                              {eventLabels[e.type] || "Evento de atendimento"}
+                            </strong>
+                            {e.actor_name && (
+                              <p className="field-help">{e.actor_name}</p>
+                            )}
+                            {(e.payload.message || e.payload.reason) && (
+                              <p>{e.payload.message || e.payload.reason}</p>
+                            )}
+                            <time>
+                              {format(e.payload.effective_at || e.created_at)}
+                            </time>
                           </li>
                         ))}
                       </ol>

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { slaLabels } from "./portal-api.js";
 const date = (x) =>
   x ? new Date(x).toLocaleString("pt-BR") : "Ainda não registrada";
 
@@ -18,6 +19,14 @@ export function WorkPanel({ record, who, call, busy, run, onChanged }) {
   return (
     <section className="sf-result">
       <h3>Atendimento e prazos</h3>
+      <p>
+        Situação do SLA:{" "}
+        <strong>{slaLabels[record.sla_status] || "Aguardando análise"}</strong>
+      </p>
+      <p>
+        Responsável:{" "}
+        <strong>{record.responsible_name || "Ainda não atribuído"}</strong>
+      </p>
       <dl>
         <dt>Primeira resposta até</dt>
         <dd>{date(record.first_response_due)}</dd>
