@@ -202,7 +202,7 @@ export default function Portals() {
   if (classic)
     return (
       <>
-        <button className="classic-return" onClick={() => setClassic(false)}>
+        <button className="classic-return" onClick={() => { chooseTheme(document.documentElement.dataset.themeChoice || "auto"); setClassic(false); }}>
           ← Voltar aos portais SolicitaFlow
         </button>
         <App />

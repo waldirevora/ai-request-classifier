@@ -1,11 +1,11 @@
 # Critérios de classificação | SolicitaFlow
 
-**Versão:** P12 / atualização 3.52 — 15/10/2026
-**Estado:** proposta didática, ainda não conectada à API nem validada por especialistas da empresa.
+**Atualização:** SolicitaFlow V2.4 — 12/11/2026. A matriz original foi definida na etapa histórica P12 e permanece inalterada.
+**Estado:** integrada ao backend e ao tutorial; parâmetros de laboratório, sem validação de política empresarial real.
 
 ## 1. Finalidade
 
-Definir uma taxonomia pequena e verificável de **categoria**, **impacto**, **urgência** e **prioridade**, antes de integrar uma LLM. Ao classificar automaticamente no futuro, o modelo deverá sugerir valores do catálogo e justificar a decisão; o analista poderá aceitar ou corrigir. **Classificação não equivale à resolução do chamado.**
+Definir categoria, impacto e urgência com valores verificáveis. A DeepSeek sugere os três campos e uma justificativa; Python calcula a prioridade. Na V2, o backend também confere suficiência, assunto e destino ativo antes de encaminhar. Ambiguidades e falhas exigem revisão humana, preservando a sugestão original. **Classificação não equivale à resolução.** Somente o departamento confirma resolução após atendimento.
 
 ## 2. Categorias (o assunto da solicitação)
 
@@ -46,21 +46,19 @@ Definir uma taxonomia pequena e verificável de **categoria**, **impacto**, **ur
 
 Os casos estão em `backend/evaluation/casos_referencia.json` (10 registros sintéticos, IDs `C01`–`C10`). Cada registro contém título, descrição, categoria esperada, impacto, urgência, prioridade e justificativa esperada.
 
-Nesta P12 verificamos automaticamente:
+Verificamos automaticamente:
 
 - O catálogo de categorias e prioridades é consistente.
 - A matriz produz resultados previsíveis para as nove combinações impacto × urgência.
 - Todos os casos têm identificadores únicos, dados completos e rótulos aceitos pela taxonomia.
 - A prioridade esperada é compatível com a matriz.
 
-**Não medimos acurácia de IA ainda.** Nenhum modelo está recebendo esses casos. Em aulas futuras, será possível comparar a saída do modelo com rótulos de referência e calcular acertos por categoria/prioridade, além de avaliar a qualidade da justificativa. Para conjuntos maiores, usar dados anonimizados ou sintéticos e revisar divergências humanas.
+**Não há avaliação estatística de acurácia publicada.** Os testes de contrato e as demonstrações fictícias não substituem um corpus rotulado e revisado por especialistas. A evolução atual valida esquema, regras, falhas e fluxo. Para avaliar classificações reais, medir acertos por categoria/impacto/urgência e divergências humanas com dados autorizados e orçamento explícito.
 
-## 6. Limites, próximos passos e formato do curso
+## 6. Roteamento e limites
 
-- A API CRUD continuará armazenando somente `titulo`, `descricao`, `status` e `criado_em` além do ID; P12 **não altera banco, payload ou endpoints**.
-- Não acrescentar botão de “classificar”: a IA será acionada automaticamente pelo backend em etapa futura, após registrar o chamado.
-- Prioridade é uma sugestão de triagem, não autorização automática para executar ou resolver ações.
-- P13 reunirá LLM, custo/latência, acionamento automático, persistência e tratamento de falhas. P14 reunirá API de revisão humana, React e integração. P15 cobrirá qualidade, segurança, documentação comercial, demonstração e auditoria/publicação autorizada.
-- O GitHub permanece privado até o fim do desenvolvimento e posterior auditoria/autorização.
+A V2 exige categoria compatível com evidências do texto, descrição suficiente e mapeamento ativo no mesmo ambiente. Não usa escore autodeclarado pelo modelo. Casos com múltiplos assuntos, categoria `outros`, informações insuficientes, destino inválido ou falha da IA vão para exceção. A heurística conservadora precisa de avaliação antes de uso empresarial.
 
-**Novo formato:** aulas mais breves e completas; quatro etapas P12–P15 até o MVP, com status de pendências ao final de cada aula. Regras da P12 não alteram API nem PostgreSQL.
+A tabela original tem 22 colunas após as migrações 001–003. O workflow e suas relações são aditivos em `sf_*`; a classificação é confirmada após persistir o pedido. O cadastro da V2 usa simulação explicitamente identificada por padrão. A integração real permanece controlada no backend.
+
+Prioridade não é política completa de SLA nem autorização de resolução. Os prazos de laboratório estão documentados em [V2.md](V2.md), com revisão humana reservada às exceções. A documentação histórica P12–P15 permanece acessível no Git; o estado atual é o SolicitaFlow V2 local. O repositório é público, mas o serviço não foi publicado.
