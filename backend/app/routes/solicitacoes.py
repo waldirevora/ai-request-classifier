@@ -2,6 +2,7 @@
 from fastapi import APIRouter, HTTPException, Response, status
 
 from app.database import conectar
+from app.identity import classic_filter
 from app.schemas import SolicitacaoEntrada
 from app.triagem import CAMPOS_RETORNO, processar_solicitacao
 
@@ -25,7 +26,7 @@ def criar_solicitacao(dados: SolicitacaoEntrada):
 def listar_solicitacoes():
     with conectar() as conn:
         return conn.execute(
-            f"SELECT {CAMPOS_RETORNO} FROM solicitacoes ORDER BY id"
+            f"SELECT {CAMPOS_RETORNO} FROM solicitacoes WHERE true {classic_filter()} ORDER BY id"
         ).fetchall()
 
 
