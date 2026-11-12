@@ -144,5 +144,7 @@ def review(case_id:UUID,data:Review,who=Depends(actor)):
             decisao_revisao='corrigir',observacao_revisao=%s,revisado_em=now(),status='revisada' WHERE id=%s''',
             (data.category.value,data.impact.value,data.urgency.value,priority,data.reason,case['request_id']))
         conn.execute("INSERT INTO sf_routing_decisions(workspace_id,case_id,step,outcome,reasons,department_id) VALUES(%s,%s,'review','manual',%s,%s)",(who['workspace_id'],case_id,Jsonb([data.reason]),data.department_id))
+        from app.workflow import apply_policy
+        apply_policy(conn,{**case,'state':'encaminhada','priority':priority})
         event(conn,case,'revisao_humana',{'reason':data.reason,'priority':priority},who['id'])
     return detail(case_id,who)

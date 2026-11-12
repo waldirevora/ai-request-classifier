@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useTheme } from "./useTheme.js";
 import { portalApi, statusLabels } from "./portal-api.js";
 import App from "./App.jsx";
+import { WorkPanel, OperationalReports } from "./Operations.jsx";
 import Journey from "./pages/Journey.jsx";
 import "./portals.css";
 
@@ -293,6 +294,11 @@ export default function Portals() {
                   Departamentos e regras
                 </button>
               )}
+              {who.role === "central" && (
+                <button onClick={() => setPage("reports")}>
+                  SLA e relatórios
+                </button>
+              )}
               <button onClick={() => setPage("learn")}>Como funciona</button>
               {who.role === "central" && context === "local" && (
                 <button onClick={() => setClassic(true)}>
@@ -303,6 +309,9 @@ export default function Portals() {
                 Atualizar
               </button>
             </nav>
+            {page === "reports" && who.role === "central" && (
+              <OperationalReports call={call} run={run} busy={busy} />
+            )}
             {page === "new" && (
               <form className="card sf-form sf-create" onSubmit={create}>
                 <p className="eyebrow">NOVA SOLICITAÇÃO</p>
@@ -615,6 +624,17 @@ export default function Portals() {
                             </button>
                           </form>
                         )}
+                      <WorkPanel
+                        record={selected}
+                        who={who}
+                        call={call}
+                        busy={busy}
+                        run={run}
+                        onChanged={async (next) => {
+                          setSelected(next);
+                          await refresh();
+                        }}
+                      />
                       <h3>Histórico auditável</h3>
                       <ol className="sf-timeline">
                         {selected.events.map((e) => (

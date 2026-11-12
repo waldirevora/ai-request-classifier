@@ -3,12 +3,14 @@ from fastapi import FastAPI, Depends, Request
 from fastapi.responses import JSONResponse
 from app.identity import legacy_guard
 from app.portals import router as portals_router
+from app.operations import router as operations_router
 
 from app.routes.revisoes import router as revisoes_router
 from app.routes.solicitacoes import router as solicitacoes_router
 
 app = FastAPI(title="SolicitaFlow", version="0.14.0")
 app.include_router(portals_router)
+app.include_router(operations_router)
 app.include_router(solicitacoes_router, dependencies=[Depends(legacy_guard)])
 app.include_router(revisoes_router, dependencies=[Depends(legacy_guard)])
 

@@ -30,4 +30,5 @@ def test_routing_is_persisted_once(monkeypatch):
         assert finalize(c,case,result)['state']=='encaminhada'
         assert finalize(c,case,result)['state']=='encaminhada'
         assert c.execute('SELECT count(*) n FROM sf_routing_decisions').fetchone()['n']==1
-        assert c.execute('SELECT count(*) n FROM sf_events').fetchone()['n']==1
+        assert c.execute("SELECT count(*) n FROM sf_events WHERE type='roteamento_automatico'").fetchone()['n']==1
+        assert c.execute("SELECT count(*) n FROM sf_events WHERE type='sla_definido'").fetchone()['n']==1
