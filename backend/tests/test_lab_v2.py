@@ -91,3 +91,20 @@ def test_concurrent_submission_creates_one_request_and_one_route(portal,monkeypa
     with conectar() as conn:
         assert conn.execute('SELECT count(*) n FROM sf_cases WHERE workspace_id=%s',(who['workspace_id'],)).fetchone()['n']==1
         assert conn.execute('SELECT count(*) n FROM sf_routing_decisions WHERE workspace_id=%s',(who['workspace_id'],)).fetchone()['n']==1
+
+
+def test_new_request_after_time_advance_uses_virtual_creation_time(portal):
+    from datetime import datetime
+    client,_=start()
+    assert client.post('/v2/lab/advance',json={'hours':14}).status_code==200
+    case=create(client).json()
+    clock=client.get('/v2/lab/clock').json()['effective_now']
+    assert abs((datetime.fromisoformat(clock)-datetime.fromisoformat(case['created_at'])).total_seconds())<5
+    assert datetime.fromisoformat(case['request']['criado_em'])==datetime.fromisoformat(case['created_at'])
+    switch(client,'suporte_ti')
+    for action in ('assumir','resolver'):
+        assert client.post('/v2/cases/'+case['id']+'/transition',json={'action':action,'message':'Servidor fictício verificado e restabelecido.'}).status_code==200
+    switch(client,'central')
+    report=client.get('/v2/reports').json()['departments'][0]
+    assert report['average_first_response_hours']<0.01
+    assert report['average_resolution_hours']<0.01
