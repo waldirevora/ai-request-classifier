@@ -12,3 +12,15 @@ app.include_router(revisoes_router)
 @app.get("/health", tags=["Sistema"])
 def health():
     return {"status": "ok"}
+
+
+@app.get("/configuracao", tags=["Sistema"])
+def configuracao():
+    """Estado efetivo da IA para a interface local, sem retornar segredos."""
+    import os
+    from app.triagem import ia_ativa
+    return {
+        "ai_enabled": ia_ativa(),
+        "ai_configured": bool(os.getenv("DEEPSEEK_API_KEY", "").strip()),
+        "ai_model": os.getenv("AI_MODEL", "deepseek-flash").strip() or "deepseek-flash",
+    }

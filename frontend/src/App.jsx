@@ -1,530 +1,355 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "./api.js";
+import { isPending } from "./domain.js";
+import { useTheme } from "./useTheme.js";
+import { Icon } from "./components/Primitives.jsx";
+import Overview from "./pages/Overview.jsx";
+import NewRequest from "./pages/NewRequest.jsx";
+import Triage from "./pages/Triage.jsx";
+import Journey from "./pages/Journey.jsx";
 
-const CATEGORIAS = [
-  ["suporte_ti", "Suporte de TI"],
-  ["acessos_permissoes", "Acessos e permissões"],
-  ["financeiro", "Financeiro"],
-  ["recursos_humanos", "Recursos Humanos"],
-  ["outros", "Outros"],
+const PAGES = [
+  ["overview", "Visão geral", "grid"],
+  ["new", "Nova solicitação", "plus"],
+  ["triage", "Triagem e revisão", "review"],
+  ["learn", "Como funciona", "route"],
 ];
-const IMPACTOS = [
-  ["individual", "Individual"],
-  ["equipe", "Equipe"],
-  ["empresa", "Empresa"],
-];
-const URGENCIAS = [
-  ["baixa", "Baixa"],
-  ["media", "Média"],
-  ["alta", "Alta"],
-];
-const rotulo = (options, value) =>
-  options.find(([id]) => id === value)?.[1] || "Não informado";
-
-const labelsStatus = {
-  aguardando_revisao: "Aguardando revisão",
-  classificacao_falhou: "Falha da IA",
-  pendente_classificacao: "IA desabilitada",
-  revisada: "Revisada",
-};
-
-const formatoData = (value) =>
-  value ? new Date(value).toLocaleString("pt-BR") : "—";
-
-function CampoSelect({ label, value, onChange, options }) {
-  return (
-    <label className="field">
-      <span>{label}</span>
-      <select
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        required
-      >
-        {options.map(([id, descricao]) => (
-          <option key={id} value={id}>
-            {descricao}
-          </option>
-        ))}
-      </select>
-    </label>
-  );
-}
-
-function NovaSolicitacao({ onCreated }) {
-  const [titulo, setTitulo] = useState("");
-  const [descricao, setDescricao] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [feedback, setFeedback] = useState("");
-
-  async function submit(event) {
-    event.preventDefault();
-    setBusy(true);
-    setFeedback("");
-    try {
-      const novo = await api.criar({
-        titulo: titulo.trim(),
-        descricao: descricao.trim(),
-      });
-      setTitulo("");
-      setDescricao("");
-      setFeedback(
-        `Solicitação #${novo.id} cadastrada. Situação: ${labelsStatus[novo.status] || novo.status}.`,
-      );
-      await onCreated();
-    } catch (error) {
-      setFeedback(error.message);
-    } finally {
-      setBusy(false);
-    }
+function initialGuide() {
+  try {
+    return localStorage.getItem("arc-guide-dismissed") !== "true";
+  } catch {
+    return true;
   }
-
-  return (
-    <section className="panel" aria-labelledby="titulo-cadastro">
-      <div className="section-header">
-        <span className="eyebrow">01 / ENTRADA</span>
-        <h2 id="titulo-cadastro">Nova solicitação</h2>
-        <p>
-          Registre o problema. A IA será acionada automaticamente quando
-          habilitada.
-        </p>
-      </div>
-      <form onSubmit={submit} className="stack">
-        <label className="field">
-          <span>Título</span>
-          <input
-            value={titulo}
-            onChange={(e) => setTitulo(e.target.value)}
-            minLength={3}
-            maxLength={120}
-            placeholder="Ex.: Sistema de pagamentos indisponível"
-            required
-          />
-        </label>
-        <label className="field">
-          <span>Descrição</span>
-          <textarea
-            value={descricao}
-            onChange={(e) => setDescricao(e.target.value)}
-            minLength={10}
-            maxLength={2000}
-            rows={5}
-            placeholder="Quem foi afetado? Qual o impacto e a urgência?"
-            required
-          />
-        </label>
-        <button className="button primary" disabled={busy} type="submit">
-          {busy ? "Registrando e classificando..." : "Registrar solicitação"}{" "}
-          <span aria-hidden="true">↗</span>
-        </button>
-        {feedback && (
-          <p className="message" role="status">
-            {feedback}
-          </p>
-        )}
-      </form>
-    </section>
-  );
 }
-
-function PainelRevisao({ registro, onReviewed }) {
-  const [modo, setModo] = useState("aceitar");
-  const [categoria, setCategoria] = useState("outros");
-  const [impacto, setImpacto] = useState("individual");
-  const [urgencia, setUrgencia] = useState("baixa");
-  const [observacao, setObservacao] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [erro, setErro] = useState("");
-
-  useEffect(() => {
-    setModo(registro?.status === "aguardando_revisao" ? "aceitar" : "corrigir");
-    setCategoria(registro?.categoria_sugerida || "outros");
-    setImpacto(registro?.impacto_sugerido || "individual");
-    setUrgencia(registro?.urgencia_sugerida || "baixa");
-    setObservacao("");
-    setErro("");
-  }, [
-    registro?.id,
-    registro?.status,
-    registro?.categoria_sugerida,
-    registro?.impacto_sugerido,
-    registro?.urgencia_sugerida,
-  ]);
-
-  if (!registro)
-    return (
-      <div className="empty-state">Nenhuma solicitação aguardando revisão.</div>
-    );
-  const podeAceitar = registro.status === "aguardando_revisao";
-
-  async function finalizar() {
-    setBusy(true);
-    setErro("");
-    try {
-      const payload =
-        modo === "aceitar"
-          ? { decisao: "aceitar" }
-          : {
-              decisao: "corrigir",
-              categoria,
-              impacto,
-              urgencia,
-              observacao: observacao.trim(),
-            };
-      await api.revisar(registro.id, payload);
-      await onReviewed();
-    } catch (error) {
-      setErro(error.message);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <div className="review-detail">
-      <div className="detail-heading">
-        <span className="eyebrow">SOLICITAÇÃO #{registro.id}</span>
-        <span
-          className={`pill ${registro.status === "aguardando_revisao" ? "ready" : "warning"}`}
-        >
-          {labelsStatus[registro.status]}
-        </span>
-      </div>
-      <h3>{registro.titulo}</h3>
-      <p className="description">{registro.descricao}</p>
-      <p className="muted smaller">
-        Cadastrada em {formatoData(registro.criado_em)}
-      </p>
-      <div className="suggestion-box">
-        <span className="eyebrow">SUGESTÃO DA IA</span>
-        {podeAceitar ? (
-          <>
-            <div className="facts">
-              <div>
-                <small>Categoria</small>
-                <strong>
-                  {rotulo(CATEGORIAS, registro.categoria_sugerida)}
-                </strong>
-              </div>
-              <div>
-                <small>Prioridade</small>
-                <strong>{registro.prioridade_sugerida?.toUpperCase()}</strong>
-              </div>
-              <div>
-                <small>Impacto</small>
-                <strong>{rotulo(IMPACTOS, registro.impacto_sugerido)}</strong>
-              </div>
-              <div>
-                <small>Urgência</small>
-                <strong>{rotulo(URGENCIAS, registro.urgencia_sugerida)}</strong>
-              </div>
-            </div>
-            <p className="reason">
-              {registro.justificativa_ia || "Sem justificativa disponível."}
-            </p>
-            <p className="muted smaller">
-              Modelo: {registro.modelo_ia || "não informado"}
-            </p>
-          </>
-        ) : (
-          <p className="muted">
-            Não existe sugestão válida. Você pode classificar manualmente esta
-            solicitação.
-          </p>
-        )}
-      </div>
-      <div className="decision">
-        <span className="eyebrow">DECISÃO HUMANA</span>
-        {podeAceitar && (
-          <label className="radio-line">
-            <input
-              type="radio"
-              checked={modo === "aceitar"}
-              onChange={() => setModo("aceitar")}
-            />{" "}
-            Aceitar sugestão da IA
-          </label>
-        )}
-        <label className="radio-line">
-          <input
-            type="radio"
-            checked={modo === "corrigir"}
-            onChange={() => setModo("corrigir")}
-          />{" "}
-          {podeAceitar ? "Corrigir sugestão" : "Classificar manualmente"}
-        </label>
-        {modo === "corrigir" && (
-          <div className="correction-grid">
-            <CampoSelect
-              label="Categoria correta"
-              value={categoria}
-              onChange={setCategoria}
-              options={CATEGORIAS}
-            />
-            <CampoSelect
-              label="Impacto"
-              value={impacto}
-              onChange={setImpacto}
-              options={IMPACTOS}
-            />
-            <CampoSelect
-              label="Urgência"
-              value={urgencia}
-              onChange={setUrgencia}
-              options={URGENCIAS}
-            />
-            <label className="field full">
-              <span>Motivo da correção (mínimo 10 caracteres)</span>
-              <textarea
-                value={observacao}
-                onChange={(e) => setObservacao(e.target.value)}
-                minLength={10}
-                maxLength={500}
-                rows={3}
-                placeholder="Por que essa classificação é mais adequada?"
-              />
-            </label>
-            <p className="muted smaller full">
-              A prioridade final será calculada pela matriz da P12 no backend.
-            </p>
-          </div>
-        )}
-        <button
-          className="button primary"
-          disabled={
-            busy || (modo === "corrigir" && observacao.trim().length < 10)
-          }
-          onClick={finalizar}
-          type="button"
-        >
-          {busy ? "Salvando decisão..." : "Concluir revisão"}{" "}
-          <span aria-hidden="true">→</span>
-        </button>
-        {erro && (
-          <p className="message error" role="alert">
-            {erro}
-          </p>
-        )}
-      </div>
-    </div>
-  );
-}
-
 export default function App() {
-  const [pendentes, setPendentes] = useState([]);
-  const [concluidas, setConcluidas] = useState([]);
-  const [solicitacoes, setSolicitacoes] = useState([]);
-  const [selectedId, setSelectedId] = useState(null);
-  const [aba, setAba] = useState("pendentes");
-  const [erro, setErro] = useState("");
+  const [page, setPage] = useState("overview");
+  const [records, setRecords] = useState([]);
+  const [hasLoaded, setHasLoaded] = useState(false);
+  const [config, setConfig] = useState(null);
   const [loading, setLoading] = useState(true);
-
-  const carregar = useCallback(async () => {
-    try {
-      const [fila, historico, lista] = await Promise.all([
-        api.pendentes(),
-        api.concluidas(),
-        api.listar(),
-      ]);
-      setPendentes(fila);
-      setConcluidas(historico);
-      setSolicitacoes(lista);
-      setSelectedId((current) =>
-        fila.some((item) => item.id === current)
-          ? current
-          : (fila[0]?.id ?? null),
-      );
-      setErro("");
-    } catch (error) {
-      setErro(error.message);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    carregar();
-  }, [carregar]);
-  const selecionada = useMemo(
-    () => pendentes.find((item) => item.id === selectedId),
-    [pendentes, selectedId],
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState("");
+  const [configError, setConfigError] = useState("");
+  const [guide, setGuide] = useState(initialGuide);
+  const [draft, setDraft] = useState({ titulo: "", descricao: "" });
+  const [view, setView] = useState({
+    scope: "pendentes",
+    status: "all",
+    search: "",
+    id: null,
+  });
+  const [theme, chooseTheme] = useTheme();
+  const [mobileNav, setMobileNav] = useState(
+    () => window.matchMedia("(max-width: 900px)").matches,
   );
-
+  const requestNumber = useRef(0);
+  const navRefs = useRef([]);
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 900px)");
+    const change = () => setMobileNav(media.matches);
+    media.addEventListener("change", change);
+    return () => media.removeEventListener("change", change);
+  }, []);
+  const refresh = useCallback(async () => {
+    const number = ++requestNumber.current;
+    setRefreshing(true);
+    const [data, settings] = await Promise.allSettled([
+      api.listar(),
+      api.configuracao(),
+    ]);
+    if (number !== requestNumber.current) return;
+    if (data.status === "fulfilled" && Array.isArray(data.value)) {
+      setRecords(data.value);
+      setHasLoaded(true);
+      setError("");
+    } else
+      setError(
+        data.reason?.message || "Não foi possível carregar as solicitações.",
+      );
+    if (settings.status === "fulfilled") {
+      setConfig(settings.value);
+      setConfigError("");
+    } else {
+      setConfig(null);
+      setConfigError(
+        "Não foi possível confirmar o estado da IA. Atualize a conexão antes de enviar uma solicitação.",
+      );
+    }
+    setLoading(false);
+    setRefreshing(false);
+  }, []);
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
+  const navigate = (next, focus = false, options = null) => {
+    setPage(next);
+    if (next === "triage" && options)
+      setView({
+        scope: options.scope || "pendentes",
+        status: options.status || "all",
+        search: "",
+        id: null,
+      });
+    if (focus)
+      requestAnimationFrame(() =>
+        document.getElementById(`heading-${next}`)?.focus(),
+      );
+  };
+  const openRecord = (r) => {
+    setView({
+      scope: r.status === "revisada" ? "revisadas" : "pendentes",
+      status: "all",
+      search: "",
+      id: r.id,
+    });
+    navigate("triage");
+  };
+  const changed = async (record) => {
+    setRecords((list) =>
+      list.some((r) => r.id === record.id)
+        ? list.map((r) => (r.id === record.id ? record : r))
+        : [...list, record],
+    );
+    await refresh();
+  };
+  const dismissGuide = () => {
+    try {
+      localStorage.setItem("arc-guide-dismissed", "true");
+    } catch {
+      /* Sessão atual. */
+    }
+    setGuide(false);
+    document.getElementById("heading-overview")?.focus();
+  };
+  const example = (x) => {
+    setDraft({ titulo: x.title, descricao: x.description });
+    navigate("new", true);
+  };
+  const aiState = !config
+    ? "unknown"
+    : config.ai_enabled && config.ai_configured
+      ? "on"
+      : config.ai_enabled
+        ? "missing"
+        : "off";
+  const aiLabel = {
+    unknown: "IA: estado indisponível",
+    on: "IA ativa",
+    missing: "IA sem configuração",
+    off: "IA desabilitada",
+  }[aiState];
+  function navKey(event, index) {
+    let next;
+    if (["ArrowRight", "ArrowDown"].includes(event.key))
+      next = (index + 1) % PAGES.length;
+    else if (["ArrowLeft", "ArrowUp"].includes(event.key))
+      next = (index + PAGES.length - 1) % PAGES.length;
+    else if (event.key === "Home") next = 0;
+    else if (event.key === "End") next = PAGES.length - 1;
+    if (next !== undefined) {
+      event.preventDefault();
+      navigate(PAGES[next][0]);
+      navRefs.current[next]?.focus();
+    }
+  }
   return (
-    <div className="shell">
-      <header className="topbar">
-        <div className="brandmark">
-          <span className="brand-icon">AC</span>
-          <div>
-            <strong>AI Request Classifier</strong>
-            <small>Triagem inteligente · MVP local</small>
-          </div>
-        </div>
-        <span className="top-label">
-          <span className="live-dot" /> AMBIENTE DE DESENVOLVIMENTO
-        </span>
-      </header>
-      <main>
-        <div className="hero">
-          <div>
-            <span className="eyebrow">CENTRAL OPERACIONAL / P14</span>
-            <h1>
-              Solicitações, <em>sob controle.</em>
-            </h1>
-            <p>IA sugere. Regras padronizam. Pessoas decidem.</p>
-          </div>
-          <div className="hero-stats">
-            <div>
-              <strong>{pendentes.length}</strong>
-              <span>Pendentes</span>
-            </div>
-            <div>
-              <strong>{concluidas.length}</strong>
-              <span>Revisadas</span>
-            </div>
-          </div>
-        </div>
-        {erro && (
-          <p className="message error global" role="alert">
-            {erro}{" "}
-            <button className="button small" onClick={carregar}>
-              Tentar novamente
-            </button>
-          </p>
-        )}
-        <div className="layout">
-          <div className="sidebar-column">
-            <NovaSolicitacao onCreated={carregar} />
-            <section className="panel compact" aria-labelledby="ultimas">
-              <div className="section-header">
-                <span className="eyebrow">VISÃO GERAL</span>
-                <h2 id="ultimas">Solicitações recentes</h2>
-              </div>
-              {loading ? (
-                <p className="muted">Carregando...</p>
-              ) : solicitacoes.length === 0 ? (
-                <p className="muted">Nenhuma solicitação cadastrada.</p>
-              ) : (
-                <ul className="recent-list">
-                  {[...solicitacoes]
-                    .reverse()
-                    .slice(0, 6)
-                    .map((r) => (
-                      <li key={r.id}>
-                        <span>
-                          <strong>
-                            #{r.id} · {r.titulo}
-                          </strong>
-                          <small>{labelsStatus[r.status] || r.status}</small>
-                        </span>
-                        <time>{formatoData(r.criado_em)}</time>
-                      </li>
-                    ))}
-                </ul>
-              )}
-            </section>
-          </div>
-          <section
-            className="panel queue-panel"
-            aria-labelledby="titulo-revisao"
+    <>
+      <a className="skip-link" href="#main-content">
+        Ir para o conteúdo
+      </a>
+      <div className="app-layout">
+        <aside className="sidebar">
+          <a
+            className="brand"
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              navigate("overview", true);
+            }}
+            aria-label="AI Request Classifier — visão geral"
           >
-            <div className="section-header">
-              <span className="eyebrow">02 / DECISÃO</span>
-              <h2 id="titulo-revisao">Revisão humana</h2>
-              <p>Valide cada sugestão antes de concluir a triagem.</p>
-            </div>
-            <div
-              className="tabs"
-              role="tablist"
-              aria-label="Situação das revisões"
-            >
+            <span className="brand-icon">AC</span>
+            <span>
+              <strong>
+                AI Request
+                <br /> Classifier
+              </strong>
+              <small>Contexto para decidir.</small>
+            </span>
+          </a>
+          <p className="nav-label">CENTRAL DE SOLICITAÇÕES</p>
+          <nav
+            className="main-nav"
+            role="tablist"
+            aria-label="Áreas da aplicação"
+            aria-orientation={mobileNav ? "horizontal" : "vertical"}
+          >
+            {PAGES.map(([id, title, icon], index) => (
               <button
+                ref={(el) => {
+                  navRefs.current[index] = el;
+                }}
+                id={`tab-${id}`}
                 role="tab"
-                aria-selected={aba === "pendentes"}
-                className={aba === "pendentes" ? "active" : ""}
-                onClick={() => setAba("pendentes")}
+                aria-selected={page === id}
+                aria-controls={`panel-${id}`}
+                tabIndex={page === id ? 0 : -1}
+                key={id}
+                className={page === id ? "active" : ""}
+                onClick={() => navigate(id)}
+                onKeyDown={(e) => navKey(e, index)}
               >
-                Pendentes <span>{pendentes.length}</span>
-              </button>
-              <button
-                role="tab"
-                aria-selected={aba === "concluidas"}
-                className={aba === "concluidas" ? "active" : ""}
-                onClick={() => setAba("concluidas")}
-              >
-                Concluídas <span>{concluidas.length}</span>
-              </button>
-              <button
-                className="refresh"
-                onClick={carregar}
-                title="Atualizar dados"
-                aria-label="Atualizar dados"
-              >
-                ↻
-              </button>
-            </div>
-            {aba === "pendentes" ? (
-              <div className="review-layout">
-                <nav className="queue-list" aria-label="Solicitações pendentes">
-                  {pendentes.length === 0 && (
-                    <p className="muted empty-list">Nenhuma pendência.</p>
-                  )}
-                  {pendentes.map((r) => (
-                    <button
-                      key={r.id}
-                      className={`queue-item ${selectedId === r.id ? "selected" : ""}`}
-                      onClick={() => setSelectedId(r.id)}
-                    >
-                      <span className="queue-item-top">
-                        <span>#{r.id}</span>
-                        <span
-                          className={
-                            r.status === "aguardando_revisao"
-                              ? "dot ready"
-                              : "dot warning"
-                          }
-                        />
-                      </span>
-                      <strong>{r.titulo}</strong>
-                      <small>{labelsStatus[r.status]}</small>
-                    </button>
-                  ))}
-                </nav>
-                <PainelRevisao registro={selecionada} onReviewed={carregar} />
-              </div>
-            ) : (
-              <div className="history-list">
-                {concluidas.length === 0 && (
-                  <p className="muted">Nenhuma revisão concluída.</p>
+                <Icon name={icon} />
+                <span>{title}</span>
+                {id === "triage" && records.some(isPending) && (
+                  <span className="nav-count" aria-hidden="true">
+                    {records.filter(isPending).length}
+                  </span>
                 )}
-                {concluidas.map((r) => (
-                  <article className="history-item" key={r.id}>
-                    <div>
-                      <strong>
-                        #{r.id} · {r.titulo}
-                      </strong>
-                      <p>
-                        {rotulo(CATEGORIAS, r.categoria_final)} · prioridade{" "}
-                        {r.prioridade_final} ·{" "}
-                        {r.decisao_revisao === "aceitar"
-                          ? "sugestão aceita"
-                          : "corrigida"}
-                      </p>
-                      {r.observacao_revisao && (
-                        <p className="muted">{r.observacao_revisao}</p>
-                      )}
-                    </div>
-                    <time>{formatoData(r.revisado_em)}</time>
-                  </article>
-                ))}
+              </button>
+            ))}
+          </nav>
+          <div className="sidebar-bottom">
+            <Icon name="shield" size={23} />
+            <strong>Inteligência com critério.</strong>
+            <p>A IA sugere. As regras padronizam. Você decide.</p>
+            <span>
+              <span className="status-dot" />
+              Ambiente local
+            </span>
+          </div>
+        </aside>
+        <div className="main-shell">
+          <header className="topbar">
+            <div className="breadcrumb">
+              <span>Central</span>
+              <span aria-hidden="true">/</span>
+              <strong>{PAGES.find(([id]) => id === page)?.[1]}</strong>
+            </div>
+            <div className="header-controls">
+              <span
+                className={`ai-indicator ai-${aiState}`}
+                title={
+                  aiState === "on"
+                    ? "Ativa e configurada no serviço local. Novos cadastros podem consumir créditos; a disponibilidade do provedor é verificada no envio."
+                    : aiState === "off"
+                      ? "Novos cadastros ficam disponíveis para classificação manual."
+                      : "Consulte a configuração local do serviço."
+                }
+              >
+                <Icon name="spark" size={15} />
+                {aiLabel}
+              </span>
+              <div className="theme-control">
+                <Icon name="sun" size={17} />
+                <label className="sr-only" htmlFor="theme-mode">
+                  Tema da interface
+                </label>
+                <select
+                  id="theme-mode"
+                  value={theme}
+                  onChange={(e) => chooseTheme(e.target.value)}
+                >
+                  <option value="auto">Automático</option>
+                  <option value="light">Claro</option>
+                  <option value="dark">Escuro</option>
+                </select>
               </div>
-            )}
-          </section>
+            </div>
+          </header>
+          <main id="main-content" tabIndex={-1}>
+            <div className="page-container">
+              {(error || configError) && (
+                <div className="callout error global-error" role="alert">
+                  <div>
+                    <strong>Vamos restabelecer a conexão.</strong>
+                    <p>{error || configError}</p>
+                    <p className="field-help">
+                      {hasLoaded
+                        ? "Os dados já carregados permanecem visíveis."
+                        : "Ainda não há dados confirmados do servidor."}
+                    </p>
+                  </div>
+                  <button
+                    className="button secondary"
+                    disabled={refreshing}
+                    onClick={refresh}
+                  >
+                    {refreshing ? "Verificando…" : "Tentar novamente"}
+                  </button>
+                </div>
+              )}
+              <section
+                role="tabpanel"
+                id="panel-overview"
+                aria-labelledby="tab-overview"
+                hidden={page !== "overview"}
+              >
+                <Overview
+                  records={records}
+                  loading={loading}
+                  unavailable={!hasLoaded && Boolean(error)}
+                  navigate={navigate}
+                  openRecord={openRecord}
+                  guide={guide}
+                  dismissGuide={dismissGuide}
+                />
+              </section>
+              <section
+                role="tabpanel"
+                id="panel-new"
+                aria-labelledby="tab-new"
+                hidden={page !== "new"}
+              >
+                <NewRequest
+                  config={config}
+                  onConfigChange={(next) => {
+                    setConfig(next);
+                    setConfigError("");
+                  }}
+                  onCreated={changed}
+                  openRecord={openRecord}
+                  navigate={navigate}
+                  draft={draft}
+                  setDraft={setDraft}
+                />
+              </section>
+              <section
+                role="tabpanel"
+                id="panel-triage"
+                aria-labelledby="tab-triage"
+                hidden={page !== "triage"}
+              >
+                <Triage
+                  records={records}
+                  loading={loading}
+                  unavailable={!hasLoaded && Boolean(error)}
+                  refresh={refresh}
+                  refreshing={refreshing}
+                  view={view}
+                  setView={setView}
+                  onReviewed={changed}
+                  navigate={navigate}
+                />
+              </section>
+              <section
+                role="tabpanel"
+                id="panel-learn"
+                aria-labelledby="tab-learn"
+                hidden={page !== "learn"}
+              >
+                <Journey useExample={example} />
+              </section>
+            </div>
+          </main>
+          <footer className="app-footer">
+            <span>AI Request Classifier</span>
+            <span>
+              Dados fictícios · Uso local controlado · Decisões humanas
+            </span>
+          </footer>
         </div>
-        <footer>
-          AI Request Classifier · P14 · Ambiente local sem autenticação. Não
-          expor à internet.
-        </footer>
-      </main>
-    </div>
+      </div>
+    </>
   );
 }
