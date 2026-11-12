@@ -85,6 +85,7 @@ def test_provider_failure_keeps_request_and_daily_budget(portal,monkeypatch):
     from app.ia import ErroClassificacao
     client,_,_=portal
     monkeypatch.setenv('SF_REAL_AI_ENABLED','true')
+    monkeypatch.setenv('AI_ENABLED','true')
     calls=[]
     def fail(*args):
         calls.append(args)

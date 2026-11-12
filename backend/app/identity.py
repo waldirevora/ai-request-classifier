@@ -3,6 +3,7 @@ import hashlib, hmac, os, secrets
 from datetime import datetime, timezone, timedelta
 from uuid import uuid4
 from fastapi import HTTPException, Request, Response
+from pydantic import TypeAdapter, ValidationError
 from app.database import conectar
 
 def password_hash(password):
@@ -67,9 +68,10 @@ def legacy_guard(request: Request):
     require(who,'central')
     if who['kind']!='local': raise HTTPException(403,'A triagem clássica exige uma conta local')
     tail=request.url.path.rsplit('/',1)[-1]
-    if tail.isdigit():
-        with conectar() as conn:
-            if conn.execute('SELECT 1 FROM sf_cases WHERE request_id=%s',(int(tail),)).fetchone():
+    try: identifier=TypeAdapter(int).validate_python(tail)
+    except ValidationError: return
+    with conectar() as conn:
+            if conn.execute('SELECT 1 FROM sf_cases WHERE request_id=%s',(identifier,)).fetchone():
                 raise HTTPException(404,'Use os portais para consultar esta solicitação')
 
 def classic_filter():

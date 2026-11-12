@@ -46,7 +46,7 @@ class CreateCase(SolicitacaoEntrada):
 @router.post('/cases',status_code=201)
 def create_case(data:CreateCase,who=Depends(actor)):
     require(who,'colaborador')
-    if data.mode=='deepseek' and (who['kind']!='local' or os.getenv('SF_REAL_AI_ENABLED','false')!='true'):
+    if data.mode=='deepseek' and (who['kind']!='local' or os.getenv('SF_REAL_AI_ENABLED','false').strip().lower()!='true' or os.getenv('AI_ENABLED','false').strip().lower()!='true' or not os.getenv('DEEPSEEK_API_KEY','').strip()):
         raise HTTPException(403,'IA real indisponível neste ambiente; utilize simulação')
     with conectar() as conn:
         # Same idempotency key serializes concurrent submissions, including the paid budget reservation.
@@ -55,6 +55,8 @@ def create_case(data:CreateCase,who=Depends(actor)):
         if old:
             if old['requester_id']!=who['id']:raise HTTPException(409,'Identificador já utilizado')
             return detail(old['id'],who)
+        # Serialize the per-workspace laboratory cap, even for distinct idempotency keys.
+        if who['kind']=='lab':conn.execute('SELECT id FROM sf_workspaces WHERE id=%s FOR UPDATE',(who['workspace_id'],))
         if who['kind']=='lab' and conn.execute('SELECT count(*) n FROM sf_cases WHERE workspace_id=%s',(who['workspace_id'],)).fetchone()['n']>=20:raise HTTPException(429,'Limite de 20 solicitações por laboratório')
         if data.mode=='deepseek':
             budget=conn.execute('''INSERT INTO sf_ai_budgets(workspace_id,day,used) VALUES(%s,current_date,1)

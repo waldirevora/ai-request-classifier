@@ -248,7 +248,7 @@ export default function Portals() {
           <span className="badge">
             {context === "lab"
               ? "Laboratório · Simulação sem custos"
-              : "Ambiente local · IA real bloqueada na V2"}
+              : "Ambiente local · Cadastro em simulação"}
           </span>
           <label>
             Tema
