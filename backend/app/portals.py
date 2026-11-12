@@ -87,8 +87,14 @@ def cases(who=Depends(actor)):
 def detail(case_id:UUID,who=Depends(actor)):
     with conectar() as conn:
         case=visible_case(conn,who,case_id)
+        from app.workflow import sla_state,now_for
+        case['sla_status']=sla_state(case,now_for(conn,who['workspace_id']))
+        case['responsible_name']=None
+        if case['responsible_id']:
+            account=conn.execute('SELECT display_name FROM sf_accounts WHERE workspace_id=%s AND id=%s',(who['workspace_id'],case['responsible_id'])).fetchone()
+            case['responsible_name']=account['display_name'] if account else None
         case['request']=conn.execute('SELECT * FROM solicitacoes WHERE id=%s',(case['request_id'],)).fetchone()
-        case['events']=conn.execute('SELECT * FROM sf_events WHERE workspace_id=%s AND case_id=%s ORDER BY id',(who['workspace_id'],case_id)).fetchall()
+        case['events']=conn.execute('SELECT e.*,a.display_name AS actor_name FROM sf_events e LEFT JOIN sf_accounts a ON (a.workspace_id,a.id)=(e.workspace_id,e.actor_id) WHERE e.workspace_id=%s AND e.case_id=%s ORDER BY e.id',(who['workspace_id'],case_id)).fetchall()
         case['decisions']=conn.execute('SELECT * FROM sf_routing_decisions WHERE workspace_id=%s AND case_id=%s ORDER BY id',(who['workspace_id'],case_id)).fetchall()
         return case
 
