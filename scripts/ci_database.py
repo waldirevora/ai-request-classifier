@@ -39,6 +39,7 @@ def main():
                     grants='SELECT,INSERT' if table=='sf_events' else 'SELECT,INSERT,UPDATE,DELETE'
                     conn.execute(sql.SQL('GRANT '+grants+' ON {} TO ai_classifier_app').format(sql.Identifier(table)))
                 conn.execute('GRANT USAGE,SELECT ON ALL SEQUENCES IN SCHEMA public TO ai_classifier_app')
+    for value in passwords.values():print('::add-mask::'+value,flush=True)
     with Path(os.environ['GITHUB_ENV']).open('a') as file:
         file.write('PGUSER=ai_classifier_test\nPGDATABASE=ai_request_classifier_test\n')
         file.write('PGPASSWORD='+passwords['ai_classifier_test']+'\n')

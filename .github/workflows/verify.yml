@@ -7,7 +7,7 @@ permissions:
   contents: read
 jobs:
   verify:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     services:
       postgres:
@@ -66,7 +66,7 @@ jobs:
           (cd backend && python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 > "$RUNNER_TEMP/backend.log" 2>&1) &
           (cd frontend && npm run dev -- --host 127.0.0.1 > "$RUNNER_TEMP/frontend.log" 2>&1) &
           python scripts/wait_local.py
-          python scripts/browser_lab.py --output "$RUNNER_TEMP/captures" --axe "$RUNNER_TEMP/qa/node_modules/axe-core/axe.min.js"
+          python scripts/browser_lab.py --output "$RUNNER_TEMP/captures" --axe "$RUNNER_TEMP/qa/node_modules/axe-core/axe.min.js" --channel chrome
       - name: Browser evidence
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

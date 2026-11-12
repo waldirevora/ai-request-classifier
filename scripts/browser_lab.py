@@ -6,11 +6,11 @@ from uuid import uuid4
 import argparse,json
 from playwright.sync_api import sync_playwright,expect
 
-def run(output,axe):
+def run(output,axe,channel=None):
     output.mkdir(parents=True,exist_ok=True)
     evidence={'steps':[],'axe':[],'screenshots':[]}
     with sync_playwright() as playwright:
-        browser=playwright.chromium.launch(chromium_sandbox=True)
+        browser=playwright.chromium.launch(chromium_sandbox=True,channel=channel)
         context=browser.new_context(viewport={'width':1440,'height':1000})
         page=context.new_page();errors=[]
         page.on('pageerror',lambda error:errors.append(str(error)))
@@ -109,5 +109,5 @@ def run(output,axe):
         print('Browser lab passed:',len(evidence['steps']),'steps; themes, responsive, accessibility, isolation and no paid calls.')
 
 if __name__=='__main__':
-    parser=argparse.ArgumentParser();parser.add_argument('--output',type=Path,default=Path('/tmp/solicitaflow-captures'));parser.add_argument('--axe',type=Path)
-    args=parser.parse_args();run(args.output,args.axe)
+    parser=argparse.ArgumentParser();parser.add_argument('--output',type=Path,default=Path('/tmp/solicitaflow-captures'));parser.add_argument('--axe',type=Path);parser.add_argument('--channel',choices=['chrome','msedge'])
+    args=parser.parse_args();run(args.output,args.axe,args.channel)
