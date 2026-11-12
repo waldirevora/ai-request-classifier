@@ -1,125 +1,144 @@
-# GUIA | SolicitaFlow
+# Guia operacional SolicitaFlow
 
-**Documento oficial:** `docs/GUIA.md` (nome e caminho permanentes; sempre substituir o conteúdo integral).
-**Etapa:** P15 em execução. **Projeto privado.**
-**Uso:** laboratório local de Engenharia de IA; dados de solicitação fictícios.
+## Instalação recuperada
 
-## 1. O que o MVP faz
+Diretório ativo: `/home/waldir/projects/ai-request-classifier` no Ubuntu/WSL.
+Python 3.12 no `backend/.venv`; Node 24 em
+`~/.local/opt/ai-request-classifier/node/bin`. PostgreSQL 18.6 usa a instalação
+local já existente em `127.0.0.1:5432`. Estes caminhos históricos são intencionais.
+Não usar o ambiente virtual ou node_modules da cópia Windows.
 
-O funcionário cadastra uma solicitação na interface React. A FastAPI valida e persiste o cadastro no PostgreSQL antes de solicitar à DeepSeek uma proposta de categoria, impacto, urgência e justificativa. A matriz de negócio P12 determina a prioridade. Um analista aceita ou corrige a classificação e o PostgreSQL registra o resultado final. Se a IA falhar, o cadastro é preservado e a revisão manual continua disponível. **Classificação não é resolução do chamado.**
+O controlador novo `scripts/local_services.py` administra exclusivamente os
+processos da aplicação. Não instala, inicia ou encerra PostgreSQL, WSL ou Docker.
 
-## 2. Executar localmente
-
-Pré-requisitos: PostgreSQL Windows no host `127.0.0.1` e porta `5433`, bases `ai_request_classifier` e `ai_request_classifier_test`, SQL 001/002/003 já aplicados, Python em `backend/.venv` e Node.js.
-
-Terminal 1 (backend):
-
-```powershell
-cd D:\Projects\ai-request-classifier\backend
-.\.venv\Scripts\python.exe -m uvicorn app.main:app --reload
+```bash
+cd ~/projects/ai-request-classifier
+backend/.venv/bin/python scripts/local_services.py start
+backend/.venv/bin/python scripts/local_services.py status
+backend/.venv/bin/python scripts/local_services.py restart-backend
 ```
 
-Terminal 2 (React):
+Os endereços são http://localhost:5173 e http://localhost:8000/docs. O proxy Vite
+`/api` aponta para `127.0.0.1:8000`; o navegador não recebe credenciais de banco ou IA.
+Serviços ficam vinculados a `127.0.0.1`, para uso local, sem publicação.
 
-```powershell
-cd D:\Projects\ai-request-classifier\frontend
+Os PIDs e logs ficam em `~/.local/share/ai-request-classifier/`:
+`backend.pid`, `frontend.pid`, `sla.pid` e os respectivos `.log`.
+Antes de sinalizar um PID, o controlador confere diretório e comando do processo.
+Scheduler verifica prazos a cada 60 segundos e não chama IA.
+
+```bash
+# Encerra somente backend, frontend e scheduler; mantém PostgreSQL.
+backend/.venv/bin/python scripts/local_services.py stop
+```
+
+Sessões destacadas sobrevivem ao fechamento do terminal, enquanto o WSL e os
+processos permanecerem ativos. Encerrar o WSL encerra também os serviços.
+
+## Variáveis e precedência
+
+`backend/.env` e `.env.test` são privados, ignorados pelo Git e não devem ser
+copiados para comandos, relatórios ou capturas. A aplicação chama
+`load_dotenv(..., override=False)`: variáveis herdadas prevalecem quando uvicorn
+é iniciado diretamente. O controlador novo constrói o ambiente a partir do arquivo
+local, removendo previamente variáveis herdadas PG/AI/DeepSeek/SF.
+
+Principal: banco `ai_request_classifier`, role `ai_classifier_app`.
+Testes: banco `ai_request_classifier_test`, role `ai_classifier_test`.
+Role proprietária do principal: `ai_classifier_owner` sem login.
+Aplicação não tem TRUNCATE; usuário de testes não tem CONNECT no principal.
+
+O controlador força `SF_SECURE_LEGACY=true`. A IA V2 exige `AI_ENABLED=true`,
+`SF_REAL_AI_ENABLED=true` e chave presente. O segundo controle é false por padrão.
+Todos os formulários V2 usam simulação, mesmo com a integração legada configurada.
+Testes sempre recebem IA desabilitada e chave fictícia, com transporte bloqueado.
+Não modificar a DeepSeek ou habilitar chamadas pagas para executar o laboratório.
+
+## Contas e laboratório
+
+O botão **Explorar laboratório** inicia um ambiente fictício independente. Trocar
+personagens não autentica usuários reais. O cabeçalho identifica o modo de simulação.
+Cada ambiente admite até 20 pedidos, expira em 24 horas e não usa API paga.
+Criar outro laboratório produz outro conjunto de dados; não elimina os anteriores.
+
+Contas fictícias locais usam senhas geradas. Na instalação recuperada, o arquivo
+privado é `~/.local/share/ai-request-classifier/solicitaflow-v2/local-accounts.json`
+(permissão 0600). Consulte-o somente em um editor local, sem enviar seu conteúdo.
+Usuários: `colaborador`, `central`, `suporte_ti`, `acessos_permissoes`, `financeiro`,
+`recursos_humanos`. O arquivo não faz parte do repositório.
+
+`scripts/seed_local.py` provisiona as contas uma única vez em uma instalação nova.
+Recusa sobrescrever um ambiente ou arquivo de credenciais existente. Não executar
+novamente para tentar recuperar senhas: não altera credenciais já criadas.
+
+A central local pode abrir **Triagem clássica**, que preserva as quatro abas do MVP.
+Pedidos V2 ficam nos portais próprios. A triagem clássica pode consumir créditos
+quando a IA legada estiver ativa; sua operação é restrita à central local confiável.
+
+## Testes seguros
+
+```bash
+backend/.venv/bin/python scripts/local_services.py test
+export PATH="$HOME/.local/opt/ai-request-classifier/node/bin:$PATH"
+cd frontend
 npm ci
-npm run dev
-```
-
-- Frontend: http://127.0.0.1:5173/
-- Swagger: http://127.0.0.1:8000/docs
-- O proxy Vite encaminha `/api/*` para FastAPI local na porta 8000.
-- Chave DeepSeek somente em `backend/.env`, nunca no Git ou no React.
-
-## 3. Verificações automáticas da P15
-
-Na pasta `backend`, os testes usam `ai_request_classifier_test`, cuja tabela de solicitações é **apagada e reiniciada** automaticamente. Nunca aponte os testes para o banco principal.
-
-```powershell
-cd D:\Projects\ai-request-classifier\backend
-$env:AI_ENABLED = "false"
-.\.venv\Scripts\python.exe -m pytest -q
-Remove-Item Env:\AI_ENABLED -ErrorAction SilentlyContinue
-```
-
-Em outro terminal:
-
-```powershell
-cd D:\Projects\ai-request-classifier\frontend
-npm ci
+npm test
 npm run build
-npm audit
 ```
 
-P14: **41 testes aprovados** e build validado. P15: **46 testes Python aprovados em 5,56 s**, posteriormente confirmados como funcionando; `pip check` sem conflitos; `npm ci` e `npm run build` aprovados, `npm audit` reportou 0 vulnerabilidades conhecidas. Não repetir testes aprovados sem mudança técnica relevante.
+Preflight comprova DB/role de teste, PostgreSQL 18, porta 5432, TRUNCATE permitido
+somente ali e impossibilidade de conectar ao principal. Fixtures limpam apenas as
+tabelas conhecidas no banco de testes; não usam CASCADE no principal. O ledger de
+migrações é preservado. O snapshot de solicitações principal deve permanecer igual.
 
-## 4. Avaliação da IA com os dez casos de referência
+Para repetir o teste de navegador com as ferramentas já instaladas:
 
-Esta avaliação chama diretamente `app.ia.classificar_solicitacao()` (sem `POST /solicitacoes`), portanto **não insere nem altera linhas no PostgreSQL**. Compara categoria, impacto, urgência e prioridade com os rótulos de `backend/evaluation/casos_referencia.json`.
-
-Prévia **sem rede e sem custo**:
-
-```powershell
-cd D:\Projects\ai-request-classifier\backend
-.\.venv\Scripts\python.exe evaluation\avaliar_ia.py
+```bash
+cd ~/projects/ai-request-classifier
+~/.local/share/ai-request-classifier/browser-venv/bin/python scripts/browser_lab.py \
+  --output /tmp/solicitaflow-captures \
+  --axe ~/.local/share/ai-request-classifier/ux-redesign/tools/node_modules/axe-core/axe.min.js
 ```
 
-Chamada **real, autorizada pelo comando explícito**, com dez solicitações fictícias (pode consumir créditos):
+Esse teste abre Chromium com sandbox habilitado, cria apenas dados fictícios em
+laboratórios isolados e não chama a DeepSeek. No CI, utiliza o Chrome do runner
+com o mesmo sandbox. Não usar `--no-sandbox` para contornar falhas.
 
-```powershell
-.\.venv\Scripts\python.exe evaluation\avaliar_ia.py --live
+## Migrações
+
+001, 002 e 003 pertencem ao MVP e já estão aplicadas nesta instalação. Não reaplicar
+sem conferir o catálogo. A V2 aplicou 004, 005 e 006, registradas em
+`sf_schema_versions` com checksum. A tabela original continua com 22 colunas.
+
+Para conferir por uma conexão administrativa local autorizada, somente leitura:
+
+```sql
+SELECT current_database(), current_user, current_setting('server_version'),
+       current_setting('port');
+SELECT version, sha256, applied_at FROM sf_schema_versions ORDER BY version;
+SELECT count(*) FROM information_schema.columns
+WHERE table_schema='public' AND table_name='solicitacoes';
 ```
 
-Para amostra menor, por exemplo duas chamadas reais:
+O runner aditivo é `scripts/migrate_v2.py`. Exemplo para uma instalação em que
+libpq já tenha uma conexão administrativa segura configurada, sem senha no comando:
 
-```powershell
-.\.venv\Scripts\python.exe evaluation\avaliar_ia.py --live --limit 2
+```bash
+PGDATABASE=ai_request_classifier backend/.venv/bin/python scripts/migrate_v2.py ai_classifier_owner
+PGDATABASE=ai_request_classifier_test backend/.venv/bin/python scripts/migrate_v2.py ai_classifier_test
 ```
 
-A chamada ignora o interruptor `AI_ENABLED` do fluxo de cadastro; `--live` aciona diretamente a função de IA e requer `DEEPSEEK_API_KEY` disponível no `backend/.env`. **Não compartilhe a chave.** Em caso de conflito com variável PowerShell: `Remove-Item Env:\DEEPSEEK_API_KEY -ErrorAction SilentlyContinue` no terminal em que rodará a avaliação.
+Não executar esses comandos com a role limitada da aplicação esperando privilégios
+administrativos. O runner não cria bancos, não redefine senhas e não concede acesso.
+`scripts/ci_database.py` é exclusivo do serviço efêmero GitHub Actions e recusa
+objetos existentes. Nunca usá-lo para provisionar a instalação local.
 
-Resultados exibidos: acerto por campo, acerto completo, falhas técnicas, tokens de entrada/saída e latências. **Medição P15 concluída:** 10/10 chamadas bem-sucedidas; categoria 90%, impacto 90%, urgência 70%, prioridade 90%, acerto completo 60%; 3.289 tokens entrada, 551 saída e 1.215 ms de latência média. Divergências C03, C05, C08 e C09. Ver `docs/RELATORIO_AVALIACAO.md`. O denominador inclui falhas. Não calcular custo monetário sem tarifa atual e modalidades de cobrança. Dez casos fictícios não estimam qualidade em produção.
+## Problemas comuns
 
-## 5. Dependências Python verificadas
-
-O arquivo `backend/requirements.txt` inclui `fastapi`, `uvicorn`, `pydantic`, `psycopg[binary]` e `python-dotenv`. A inclusão explícita de `pydantic` é intencional. O `backend/requirements-dev.txt` permanece com `-r requirements.txt`, `pytest` e **`httpx2`**, conforme a configuração local testada pelo desenvolvedor; não substituí-lo automaticamente por outra biblioteca. `pip check` retornou `No broken requirements found.`
-
-Uma instalação em máquina diferente deve repetir a instalação, `pip check` e a suíte de testes; a validação atual não representa compatibilidade universal de versões futuras.
-
-## 6. Teste ponta a ponta (manual)
-
-1. Com FastAPI e React em execução, cadastre solicitação fictícia e confirme resposta `201`.
-2. Se a IA estiver ativa, verifique `aguardando_revisao` e sugestão completa; se estiver desligada/indisponível, verifique `pendente_classificacao` ou `classificacao_falhou`.
-3. Aceite ou corrija a classificação no React. A prioridade final deve seguir a matriz P12.
-4. Atualize a página; confira o registro no histórico e em `GET /solicitacoes/{id}`.
-5. Repetir a decisão deve retornar `409 Conflict`; valores inválidos devem gerar `422`.
-6. Não usar dados reais ou pessoais, nem expor `localhost` por túnel público.
-
-## 7. Auditoria antes de publicar o repositório
-
-Na raiz do projeto:
-
-```powershell
-git status -sb
-git diff --check
-git check-ignore -v --no-index backend/.env frontend/node_modules frontend/dist
-git ls-files -- backend/.env
-```
-
-O último comando deve ficar vazio. Faça varredura também do **histórico** (Git atual limpo não prova histórico limpo), com ferramenta de detecção de segredos e inspeção dos resultados sem imprimir credenciais. Não publicar arquivos `.env`, chaves, relatórios locais com conteúdo sensível ou o prompt privado de continuidade.
-
-O GitHub pode ficar público **como código-fonte**, mas isso não autoriza implantar a aplicação na internet. Este MVP não oferece login, autorização, identificação de revisores ou controles de produção. Hospedagem pública exigirá controles adicionais.
-
-## 8. Fechamento Git e licença MIT
-
-- **Licença escolhida:** MIT, arquivo completo `LICENSE` na raiz, atribuição `Copyright (c) 2026 waldirevora` (revisar titular, se necessário).
-- **Segurança verificada:** Gitleaks examinou 16 commits e cerca de 275 KB em `git --redact --log-opts="--all"`, sem segredos detectados. `.env`, `node_modules` e `dist` ignorados. A varredura não garante ausência de todas as vulnerabilidades.
-- **IA avaliada:** 10/10 chamadas bem-sucedidas, 60% de acerto completo; casos C03, C05, C08 e C09 analisados qualitativamente, sem alterar rótulos para elevar a pontuação.
-- **Documentos completos:** `README.md`, `docs/ARQUITETURA.md`, `docs/GUIA.md`, `docs/PLANO_DE_ESTUDOS_E_DICAS.md` e `docs/RELATORIO_AVALIACAO.md`.
-- **Antes do commit:** verificar `git status -sb`, `git diff --check`, `git diff --cached --name-only`, `git diff --cached --check` e possíveis segredos nos arquivos novos. Usar staging seletivo.
-- **Após o push:** conferir `git status -sb` e o hash do último commit. Manter repositório privado até autorização explícita.
-
-## 9. Status
-
-**14/15 etapas concluídas (93,3% por etapas de estudo).** P15 em fechamento: avaliação, testes, dependências, frontend e varredura de segredos concluídos conforme evidências. Falta adicionar a licença e os documentos ao Git, revisar o staging e realizar commit/push. A publicação do código depende de autorização explícita; a aplicação continua restrita a localhost, sem autenticação.
+401: entre novamente ou inicie um laboratório; a sessão pode ter expirado.
+403: confira perfil e contexto; trocar aba não concede autorização.
+404: recurso ausente ou fora do escopo do perfil/ambiente.
+409: estado mudou ou atendimento já assumido; atualize a lista.
+422: confira campos ou mapeamento categoria/departamento.
+429: cota do laboratório, de login ou da IA controlada atingida.
+Sem conexão: confira PostgreSQL existente e `local_services.py status`; não reinstale.

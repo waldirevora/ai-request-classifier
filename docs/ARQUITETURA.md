@@ -1,76 +1,68 @@
-# Arquitetura | SolicitaFlow
+# Arquitetura SolicitaFlow
 
-**Estado:** MVP funcional local até P14; P15 em validação. Não está preparado para implantação pública.
+SolicitaFlow evolui o AI Request Classifier, preservando o histórico e a tabela
+`solicitacoes`. O MVP de triagem humana continua disponível na central local;
+a V2 acrescenta roteamento, atendimento, SLA e laboratório de demonstração.
 
-## Negócio
+## Componentes
 
-Padronizar a triagem de solicitações internas: cadastro, sugestão de IA, cálculo determinístico da prioridade e decisão humana. **Classificar não é resolver o chamado.**
+- `frontend/src/Portals.jsx`: sessão, navegação e experiências por perfil.
+- `LabGuide.jsx`: personagens fictícios e jornada guiada sem IA externa.
+- `Operations.jsx`: atendimento, políticas, alertas e relatórios.
+- `ProcessEducation.jsx`: explicação da V2 e matriz determinística interativa.
+- `App.jsx` e `pages/*`: interface clássica preservada, quatro abas.
+- `useTheme.js` e `public/theme-init.js`: preferência automática/clara/escura,
+  persistência local e aplicação inicial antes da renderização.
+- `backend/app/identity.py`: contas, sessões opacas e autorização por recurso.
+- `portals.py`: cadastro persistente, consultas, departamentos e revisão de exceções.
+- `routing.py`: validação determinística e encaminhamento único com auditoria.
+- `workflow.py` / `operations.py`: transições, SLA, alertas internos e relatório.
+- `laboratory.py`: contextos fictícios isolados, expiração e tempo simulado.
+- `ia.py` e `classificacao.py`: integração DeepSeek e matriz de prioridade original.
+- `scripts/check_sla.py`: agendamento em processo de usuário, sem consumo de IA.
 
-## Fluxo ponta a ponta
+## Dados e fronteiras de confiança
 
 ```mermaid
-flowchart TD
- A[React: cadastro] -->|fetch /api/solicitacoes| B[Vite proxy local]
- B -->|POST /solicitacoes| C[FastAPI e Pydantic]
- C --> D[(PostgreSQL: INSERT / COMMIT)]
- D --> E[triagem.py chama ia.py]
- E -->|HTTPS Bearer + JSON| F[DeepSeek]
- F --> G[Pydantic valida categoria, impacto e urgência]
- G --> H[classificacao.py aplica matriz P12]
- H --> I[(PostgreSQL: sugestão / aguardando_revisao)]
- E -. falha .-> J[(PostgreSQL: classificacao_falhou)]
- I --> K[React: analista aceita ou corrige]
- J --> K
- K -->|POST /revisoes/id| L[FastAPI: decisão e validação]
- L --> M[(PostgreSQL: campos finais / revisada)]
- N[P15: avaliação offline ou live de 10 casos] -. chama diretamente .-> E
+erDiagram
+    SF_WORKSPACES ||--o{ SF_ACCOUNTS : contem
+    SF_WORKSPACES ||--o{ SF_DEPARTMENTS : contem
+    SF_DEPARTMENTS ||--o{ SF_ROUTES : recebe
+    SOLICITACOES ||--o| SF_CASES : evolui
+    SF_ACCOUNTS ||--o{ SF_CASES : solicita_ou_atende
+    SF_DEPARTMENTS ||--o{ SF_CASES : destino
+    SF_CASES ||--o{ SF_ROUTING_DECISIONS : registra
+    SF_CASES ||--o{ SF_EVENTS : historico
+    SF_CASES ||--o{ SF_NOTIFICATIONS : alertas_internos
+    SF_WORKSPACES ||--o{ SF_SLA_POLICIES : configura
 ```
 
-## Responsabilidades
+As FKs compostas impedem vínculos entre ambientes. O serviço valida workspace,
+perfil e propriedade em cada recurso; o frontend não é a fronteira de segurança.
+O cabeçalho de contexto não autentica: é necessária uma sessão válida do tipo
+correto. Cookies locais e de laboratório são separados. Role switch só existe no
+laboratório e revoga o token anterior.
 
-| Arquivo | Papel |
-|---|---|
-| `frontend/src/App.jsx` | UI de cadastro, fila e revisão humana |
-| `frontend/src/api.js` | Chamadas `fetch` à FastAPI |
-| `frontend/vite.config.js` | Proxy local `/api` -> porta 8000 |
-| `backend/app/main.py` | Inicialização e inclusão dos routers |
-| `backend/app/routes/solicitacoes.py` | CRUD e acionamento automático da triagem |
-| `backend/app/schemas.py` | Validação do cadastro |
-| `backend/app/database.py` | Conexão PostgreSQL e carregamento `.env` |
-| `backend/app/triagem.py` | Chamada da IA, persistência e fallback |
-| `backend/app/ia.py` | HTTPS DeepSeek, instruções, JSON e validação de resposta |
-| `backend/app/classificacao.py` | Categoria, impacto, urgência e prioridade pela matriz |
-| `backend/app/schemas_revisao.py` | Contrato Pydantic para decisão humana |
-| `backend/app/routes/revisoes.py` | Fila, histórico, aceite/correção com transação |
-| `backend/evaluation/avaliar_ia.py` | P15: avaliação pontual direta, sem escrever no banco |
-| `backend/tests/test_avaliacao.py` | P15: testes offline do cálculo de métricas |
+O pedido é confirmado antes de analisar. A sugestão original é preservada na
+tabela existente. Categoria, impacto e urgência são validados pelo backend;
+prioridade é calculada pela matriz. O encaminhamento usa lock de linha e índice
+único. Revisão humana registra decisão separada e só trata exceções.
 
-## Dados e estados
+SLA usa regras determinísticas e snapshot da política no encaminhamento.
+Scheduler e verificação manual compartilham lock por ambiente e notificações
+únicas por caso/tipo. Não há envio de mensagens externas. Tempo virtual é permitido
+apenas em ambientes fictícios, sem alterar o relógio do sistema.
 
-- `001_create_solicitacoes.sql`: `id`, título, descrição, status e data de criação.
-- `002_add_classificacao_ia.sql`: categoria, impacto, urgência, prioridade e justificativa sugeridos; modelo, tokens, latência e hora da classificação.
-- `003_add_revisao_humana.sql`: categoria, impacto, urgência e prioridade finais; decisão, observação e data da revisão.
-- Estados: `pendente_classificacao` (sem sugestão), `aguardando_revisao` (IA respondeu), `classificacao_falhou` (API falhou), `revisada` (decisão final).
+## Execução, migrações e qualidade
 
-O cadastro é confirmado **antes** de chamar a DeepSeek: falhas de rede não apagam o registro. O analista pode corrigir manualmente quando IA falha. Aceite exige sugestão existente; revisão duplicada devolve `409` e a operação usa `SELECT ... FOR UPDATE`.
+Frontend Vite 5173 → proxy `/api` → FastAPI 8000 → PostgreSQL 18 em 5432.
+Todos ficam em loopback no laboratório local. DeepSeek recebe dados somente
+quando o operador habilita explicitamente o fluxo real controlado.
 
-## Contrato HTTP principal
+Migrações 001–003 originais permanecem intactas. 004–006 são aditivas e versionadas
+por checksum. A aplicação usa role limitada; o usuário de testes é separado e não
+conecta ao principal. CI provisiona PostgreSQL efêmero, verifica compatibilidade
+com registro legado e executa testes backend/frontend/build/navegador/acessibilidade.
 
-- `POST /solicitacoes`: cadastro, tentativa automática de IA, resposta `201`.
-- `GET /solicitacoes` e `GET /solicitacoes/{id}`: consulta.
-- `PUT /solicitacoes/{id}` / `DELETE /solicitacoes/{id}`: CRUD existente.
-- `GET /revisoes/pendentes`: fila; `GET /revisoes/concluidas`: histórico.
-- `POST /revisoes/{id}`: `{"decisao":"aceitar"}` ou `{"decisao":"corrigir", "categoria":"...", "impacto":"...", "urgencia":"...", "observacao":"..."}`.
-- O backend recalcula prioridade final mesmo quando a interface exibe valores previstos.
-
-## Avaliação e qualidade (P15)
-
-`avaliar_ia.py` lê o conjunto P12 e, **somente com `--live`**, chama `app.ia.classificar_solicitacao` dez vezes (ou menos, com `--limit`). Compara categoria, impacto, urgência e prioridade esperadas com as sugestões. Contabiliza erros como falhas, mostra tokens e latência e não grava dados no PostgreSQL. Taxas com dez casos são exploratórias, não métricas de produção.
-
-Testes P14: 41 passaram no Windows. P15: **46 testes Python aprovados**, `pip check` sem conflitos identificados e frontend compilado com Vite 6.4.4 (`npm ci` e `npm run build` aprovados); `npm audit` não reportou vulnerabilidades conhecidas. A avaliação da DeepSeek executou **10/10 chamadas com sucesso**: categoria 90%, impacto 90%, urgência 70%, prioridade 90%, acerto completo 60%, 3.289 tokens de entrada, 551 de saída e latência média de 1.215 ms. Os resultados se limitam a dez casos fictícios; custo monetário não foi medido. Banco automatizado `ai_request_classifier_test` é separado e usa `TRUNCATE` destrutivo somente nele.
-
-## Limitações e segurança
-
-Sem autenticação, autorização, identificação auditável do revisor, limites de tráfego e privacidade operacional completos; não expor a aplicação fora de localhost. A chamada ao modelo usa texto como dado não confiável e há instruções básicas para ignorar comandos embutidos, mas isso **não equivale a proteção completa contra prompt injection**. Na P15 testar exemplos adversariais e manter revisão humana. GitHub público significa publicação do **código**, não habilitação de um servidor de produção.
-
-O `.env` nunca deve ser versionado; `frontend/node_modules/`, `frontend/dist/` e o prompt privado não entram no Git. Auditoria local pré-publicação: `backend/.env` fora do Git; `frontend/node_modules` e `frontend/dist` ignorados; Gitleaks examinou 16 commits e aproximadamente 275 KB, sem achar segredos conforme suas regras. A licença MIT foi escolhida; falta revisão do staging e commit/push. **A visibilidade do repositório só muda com autorização explícita do desenvolvedor.**
+Leia [V2.md](V2.md) para contratos completos, políticas fictícias e controles
+exigidos antes de qualquer futura publicação Render/Neon.

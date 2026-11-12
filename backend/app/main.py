@@ -9,7 +9,7 @@ from app.laboratory import router as laboratory_router
 from app.routes.revisoes import router as revisoes_router
 from app.routes.solicitacoes import router as solicitacoes_router
 
-app = FastAPI(title="SolicitaFlow", version="0.14.0")
+app = FastAPI(title="SolicitaFlow", version="2.4.0")
 app.include_router(portals_router)
 app.include_router(operations_router)
 app.include_router(laboratory_router)
