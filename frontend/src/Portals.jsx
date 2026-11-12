@@ -2,8 +2,9 @@ import React, { useEffect, useState } from "react";
 import { useTheme } from "./useTheme.js";
 import { portalApi, statusLabels } from "./portal-api.js";
 import App from "./App.jsx";
+import { LabGuide } from "./LabGuide.jsx";
 import { WorkPanel, OperationalReports } from "./Operations.jsx";
-import Journey from "./pages/Journey.jsx";
+import ProcessEducation from "./ProcessEducation.jsx";
 import "./portals.css";
 
 const categories = {
@@ -18,10 +19,16 @@ const format = (value) =>
 
 export default function Portals() {
   const [theme, chooseTheme] = useTheme();
-  const [context, setContext] = useState(
-    () => sessionStorage.getItem("sf-context") || "local",
-  );
+  const [context, setContext] = useState(() => {
+    try {
+      return sessionStorage.getItem("sf-context") || "local";
+    } catch {
+      return "local";
+    }
+  });
   const [who, setWho] = useState(null);
+  const [actors, setActors] = useState([]);
+  const [clock, setClock] = useState(null);
   const [ready, setReady] = useState(false);
   const [page, setPage] = useState("portal");
   const [classic, setClassic] = useState(false);
@@ -88,6 +95,75 @@ export default function Portals() {
       setBusy(false);
     }
   }
+  function changeContext(next) {
+    try {
+      sessionStorage.setItem("sf-context", next);
+    } catch {
+      /* Current tab only. */
+    }
+    setContext(next);
+    setPage("portal");
+    setSelected(null);
+    setError("");
+    setFilter("all");
+  }
+  useEffect(() => {
+    if (who?.kind !== "lab") {
+      setActors([]);
+      setClock(null);
+      return;
+    }
+    let active = true;
+    Promise.all([call("/lab/actors"), call("/lab/clock")])
+      .then(([a, c]) => {
+        if (active) {
+          setActors(a);
+          setClock(c.effective_now);
+        }
+      })
+      .catch((e) => {
+        if (active) setError(e.message);
+      });
+    return () => {
+      active = false;
+    };
+  }, [who?.id]);
+  async function startLab() {
+    await run(async () => {
+      const person = await portalApi("lab", "/lab/start", { method: "POST" });
+      changeContext("lab");
+      setWho(person);
+      setReady(true);
+      if (context === "lab") await refresh(person);
+    });
+  }
+  async function switchActor(username) {
+    await run(async () => {
+      const person = await call("/lab/switch", {
+        method: "POST",
+        body: { username },
+      });
+      setWho(person);
+      setSelected(null);
+      setPage("portal");
+      setFilter("all");
+      await refresh(person);
+    });
+  }
+  async function advance(hours) {
+    await run(async () => {
+      const result = await call("/lab/advance", {
+        method: "POST",
+        body: { hours },
+      });
+      setClock(result.effective_now);
+      setNotice(
+        `Tempo simulado avançou ${hours} horas. ${result.notifications_created} alertas internos registrados. Consulte a central para acompanhar.`,
+      );
+      if (selected) setSelected(await call(`/cases/${selected.id}`));
+      await refresh();
+    });
+  }
   async function open(id) {
     const record = await call(`/cases/${id}`);
     setSelected(record);
@@ -153,6 +229,22 @@ export default function Portals() {
           </span>
         </a>
         <div className="sf-tools">
+          {context === "lab" ? (
+            <button
+              className="button secondary"
+              onClick={() => changeContext("local")}
+            >
+              Voltar ao ambiente local
+            </button>
+          ) : (
+            <button
+              className="button secondary"
+              disabled={busy}
+              onClick={startLab}
+            >
+              Explorar laboratório
+            </button>
+          )}
           <span className="badge">
             {context === "lab"
               ? "Laboratório · Simulação sem custos"
@@ -186,6 +278,20 @@ export default function Portals() {
             {notice}
           </p>
         )}
+        {ready && who?.kind === "lab" && (
+          <LabGuide
+            who={who}
+            actors={actors}
+            switchActor={switchActor}
+            advance={advance}
+            fill={(example) => {
+              setDraft(example);
+              setPage("new");
+            }}
+            busy={busy}
+            clock={clock}
+          />
+        )}
         {!ready ? (
           <p role="status">Verificando sessão…</p>
         ) : !who ? (
@@ -212,39 +318,56 @@ export default function Portals() {
                 Como funciona
               </button>
             </div>
-            <form className="card sf-form" onSubmit={authenticate}>
-              <h2>Entrar no ambiente local</h2>
-              <p>
-                Use uma das contas fictícias provisionadas localmente. Cada
-                perfil possui permissões próprias.
-              </p>
-              <label>
-                Usuário
-                <input
-                  autoComplete="username"
-                  required
-                  value={login.username}
-                  onChange={(e) =>
-                    setLogin({ ...login, username: e.target.value })
-                  }
-                />
-              </label>
-              <label>
-                Senha
-                <input
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                  value={login.password}
-                  onChange={(e) =>
-                    setLogin({ ...login, password: e.target.value })
-                  }
-                />
-              </label>
-              <button className="button primary" disabled={busy}>
-                {busy ? "Entrando…" : "Entrar"}
-              </button>
-            </form>
+            {context === "lab" ? (
+              <section className="card sf-form">
+                <h2>Seu laboratório está disponível.</h2>
+                <p>
+                  Inicie uma nova sessão fictícia sem senha ou retorne ao
+                  ambiente local.
+                </p>
+                <button
+                  className="button primary"
+                  onClick={startLab}
+                  disabled={busy}
+                >
+                  Iniciar laboratório
+                </button>
+              </section>
+            ) : (
+              <form className="card sf-form" onSubmit={authenticate}>
+                <h2>Entrar no ambiente local</h2>
+                <p>
+                  Use uma das contas fictícias provisionadas localmente. Cada
+                  perfil possui permissões próprias.
+                </p>
+                <label>
+                  Usuário
+                  <input
+                    autoComplete="username"
+                    required
+                    value={login.username}
+                    onChange={(e) =>
+                      setLogin({ ...login, username: e.target.value })
+                    }
+                  />
+                </label>
+                <label>
+                  Senha
+                  <input
+                    type="password"
+                    autoComplete="current-password"
+                    required
+                    value={login.password}
+                    onChange={(e) =>
+                      setLogin({ ...login, password: e.target.value })
+                    }
+                  />
+                </label>
+                <button className="button primary" disabled={busy}>
+                  {busy ? "Entrando…" : "Entrar"}
+                </button>
+              </form>
+            )}
           </section>
         ) : (
           <>
@@ -720,15 +843,7 @@ export default function Portals() {
         )}
         {page === "learn" && (
           <section className="card sf-learning">
-            <Journey
-              useExample={(example) => {
-                setDraft({
-                  titulo: example.title,
-                  descricao: example.description,
-                });
-                setPage(who ? "new" : "portal");
-              }}
-            />
+            <ProcessEducation />
           </section>
         )}
       </main>
