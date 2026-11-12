@@ -43,10 +43,13 @@ def evaluate(conn,workspace):
     created=0
     for case in rows:
         # Reconcile a worker interrupted after the original INSERT; never call AI again.
-        if case['state']=='analisando' and datetime.now(timezone.utc)-case['created_at']>timedelta(minutes=5):
-            from app.routing import finalize
-            finalize(conn,case['id'],None)
-            continue
+        if case['state']=='analisando':
+            # Audit timestamps use real time, even after the lab clock advances.
+            started=conn.execute('SELECT min(created_at) AS started FROM sf_events WHERE case_id=%s',(case['id'],)).fetchone()['started'] or case['created_at']
+            if datetime.now(timezone.utc)-started>timedelta(minutes=5):
+                from app.routing import finalize
+                finalize(conn,case['id'],None)
+                continue
         apply_policy(conn,case)
         case=conn.execute('SELECT * FROM sf_cases WHERE id=%s',(case['id'],)).fetchone()
         if not case['resolution_due']:continue

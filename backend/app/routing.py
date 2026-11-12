@@ -48,6 +48,9 @@ def routing_reasons(title, description, result, route):
     return reasons
 
 def event(conn, case, kind, payload=None, actor=None):
+    payload=dict(payload or {})
+    clock=conn.execute('SELECT now()+make_interval(hours=>clock_hours) AS effective_at FROM sf_workspaces WHERE id=%s',(case['workspace_id'],)).fetchone()
+    payload.setdefault('effective_at',clock['effective_at'].isoformat())
     conn.execute('INSERT INTO sf_events(workspace_id,case_id,actor_id,type,payload) VALUES(%s,%s,%s,%s,%s)',
                  (case['workspace_id'],case['id'],actor,kind,Jsonb(payload or {})))
 

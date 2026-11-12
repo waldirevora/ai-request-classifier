@@ -62,9 +62,11 @@ def create_case(data:CreateCase,who=Depends(actor)):
             budget=conn.execute('''INSERT INTO sf_ai_budgets(workspace_id,day,used) VALUES(%s,current_date,1)
                 ON CONFLICT(workspace_id,day) DO UPDATE SET used=sf_ai_budgets.used+1 WHERE sf_ai_budgets.used<2 RETURNING used''',(who['workspace_id'],)).fetchone()
             if not budget:raise HTTPException(429,'Cota diária de duas classificações atingida')
-        rid=conn.execute('INSERT INTO solicitacoes(titulo,descricao) VALUES(%s,%s) RETURNING id',(data.titulo,data.descricao)).fetchone()['id']
-        case=conn.execute('''INSERT INTO sf_cases(id,workspace_id,request_id,client_key,source,requester_id)
-            VALUES(%s,%s,%s,%s,%s,%s) RETURNING *''',(uuid4(),who['workspace_id'],rid,data.client_key,data.mode,who['id'])).fetchone()
+        from app.workflow import now_for
+        created_at=now_for(conn,who['workspace_id'])
+        rid=conn.execute('INSERT INTO solicitacoes(titulo,descricao,criado_em) VALUES(%s,%s,%s) RETURNING id',(data.titulo,data.descricao,created_at)).fetchone()['id']
+        case=conn.execute('''INSERT INTO sf_cases(id,workspace_id,request_id,client_key,source,requester_id,created_at)
+            VALUES(%s,%s,%s,%s,%s,%s,%s) RETURNING *''',(uuid4(),who['workspace_id'],rid,data.client_key,data.mode,who['id'],created_at)).fetchone()
         event(conn,case,'cadastrada',{'source':data.mode},who['id'])
     # The original request is committed before any external operation.
     try:result=simulate(data.titulo,data.descricao) if data.mode=='simulacao' else classificar_solicitacao(data.titulo,data.descricao)
