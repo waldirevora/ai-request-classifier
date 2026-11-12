@@ -2,6 +2,7 @@
 import pytest
 from fastapi.testclient import TestClient
 
+from conftest import clean_test_database
 from app.database import conectar
 from app.ia import ErroClassificacao, ResultadoIA
 from app.main import app
@@ -15,7 +16,7 @@ def cliente_teste(monkeypatch):
     with conectar() as conn:
         if conn.info.dbname != "ai_request_classifier_test":
             raise RuntimeError("BLOQUEADO: conexão não é o banco de testes")
-        conn.execute("TRUNCATE TABLE solicitacoes RESTART IDENTITY")
+        clean_test_database(conn)
     return TestClient(app)
 
 

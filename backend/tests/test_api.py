@@ -2,6 +2,7 @@ import pytest
 
 from fastapi.testclient import TestClient
 
+from conftest import clean_test_database
 from app.database import conectar
 from app.main import app
 
@@ -22,9 +23,7 @@ def preparar_banco_teste(monkeypatch):
                 "Banco de testes incorreto"
             )
 
-        conn.execute(
-            "TRUNCATE TABLE solicitacoes RESTART IDENTITY"
-        )
+        clean_test_database(conn)
 
 
 def dados_validos(titulo="Meu computador nao liga"):
