@@ -77,4 +77,6 @@ def finalize(conn, case_id, result):
     updated=conn.execute('UPDATE sf_cases SET state=%s,department_id=%s WHERE id=%s RETURNING *',
         ('excecao' if reasons else 'encaminhada',department,case_id)).fetchone()
     event(conn,case,'roteamento_'+outcome,{'reasons':reasons,'department_id':str(department) if department else None})
+    from app.workflow import apply_policy
+    apply_policy(conn,updated)
     return updated
