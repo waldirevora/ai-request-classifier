@@ -1,5 +1,11 @@
 # Plano de Estudos e Dicas | AI Request Classifier
 
+> **Registro histórico.** Este documento preserva o estado, os testes e as decisões
+> da etapa em que foi produzido. Menções a operação somente local, publicação futura,
+> simulação ou pendências valem para aquela etapa. O serviço atual está publicado;
+> consulte [README](../README.md), [deploy e manutenção](DEPLOY_PUBLICO.md) e
+> [encerramento do marco](ENCERRAMENTO.md) antes de executar qualquer roteiro antigo.
+
 **Versão:** 3.65
 **Status:** P01–P14 concluídas segundo evidências do desenvolvedor; P15 em execução. GitHub privado até auditoria e autorização explícita.
 

@@ -1,5 +1,11 @@
 # Consolidação pré-deploy do SolicitaFlow
 
+> **Registro histórico.** Este documento preserva o estado, os testes e as decisões
+> da etapa em que foi produzido. Menções a operação somente local, publicação futura,
+> simulação ou pendências valem para aquela etapa. O serviço atual está publicado;
+> consulte [README](../README.md), [deploy e manutenção](DEPLOY_PUBLICO.md) e
+> [encerramento do marco](ENCERRAMENTO.md) antes de executar qualquer roteiro antigo.
+
 **Escopo:** publicar e consolidar o código válido. Não provisionar nem publicar a aplicação.
 A base auditada é a V2.6.1, merge `8acaf71ef36bc74de353a248ddd100318f21a67e` (PR #14).
 A entrega de consolidação é posterior: exemplos, proteção de arquivos locais,

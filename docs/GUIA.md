@@ -1,8 +1,9 @@
-> Estado atual: **V2.6.1 com IA real controlada e tema inicial Escuro**. As seções históricas abaixo descrevem
-> a recuperação do ambiente. Para orçamento, modo demonstrativo e testes seguros,
-> consulte [V2_6.md](V2_6.md). Não use o roteiro antigo contra o backend real.
+# Guia operacional local do SolicitaFlow
 
-# Guia operacional SolicitaFlow
+A demonstração está publicada em [https://solicitaflow.onrender.com](https://solicitaflow.onrender.com).
+Este guia é exclusivo do desenvolvimento Ubuntu/WSL. Para o serviço público, usar
+[Deploy e manutenção](DEPLOY_PUBLICO.md); não aplicar comandos locais ao Neon/Render.
+Estado e evidências do marco: [ENCERRAMENTO.md](ENCERRAMENTO.md).
 
 ## Instalação recuperada
 
@@ -12,7 +13,7 @@ Python 3.12 no `backend/.venv`; Node 24 em
 local já existente em `127.0.0.1:5432`. Estes caminhos históricos são intencionais.
 Não usar o ambiente virtual ou node_modules da cópia Windows.
 
-O controlador novo `scripts/local_services.py` administra exclusivamente os
+O controlador `scripts/local_services.py` administra exclusivamente os
 processos da aplicação. Não instala, inicia ou encerra PostgreSQL, WSL ou Docker.
 
 ```bash
@@ -24,12 +25,14 @@ backend/.venv/bin/python scripts/local_services.py restart-backend
 
 Os endereços são http://localhost:5173 e http://localhost:8000/docs. O proxy Vite
 `/api` aponta para `127.0.0.1:8000`; o navegador não recebe credenciais de banco ou IA.
-Serviços ficam vinculados a `127.0.0.1`, para uso local, sem publicação.
+Esses serviços de desenvolvimento ficam vinculados a `127.0.0.1`. A publicação
+é outro processo, com bundle compilado, banco separado e cookies HTTPS.
 
 Os PIDs e logs ficam em `~/.local/share/ai-request-classifier/`:
 `backend.pid`, `frontend.pid`, `sla.pid` e os respectivos `.log`.
 Antes de sinalizar um PID, o controlador confere diretório e comando do processo.
-Scheduler verifica prazos a cada 60 segundos e não chama IA.
+O scheduler **local** verifica prazos a cada 60 segundos e não chama IA. Ele não é
+iniciado no Render; a nuvem avalia o SLA fictício por eventos e relógio do laboratório.
 
 ```bash
 # Encerra somente backend, frontend e scheduler; mantém PostgreSQL.
@@ -39,12 +42,36 @@ backend/.venv/bin/python scripts/local_services.py stop
 Sessões destacadas sobrevivem ao fechamento do terminal, enquanto o WSL e os
 processos permanecerem ativos. Encerrar o WSL encerra também os serviços.
 
+## Preparação de outra cópia de desenvolvimento
+
+Somente em uma cópia nova, com Python 3.12, Node.js 24 e PostgreSQL 18 já disponíveis:
+
+```bash
+python3 -m venv backend/.venv
+backend/.venv/bin/python -m pip install -r backend/requirements-dev.txt
+export PATH="$HOME/.local/opt/ai-request-classifier/node/bin:$PATH"
+npm --prefix frontend ci
+```
+
+O PATH acima aponta para o Node existente na instalação recuperada; ajuste-o para
+sua instalação, sem reutilizar `.venv` ou `node_modules` criados no Windows. Se os
+binários não estiverem disponíveis, prepare-os separadamente; esses comandos não
+instalam ou administram PostgreSQL.
+
+Em uma instalação nova, copie `.env.example` e `.env.test.example` do backend para
+os arquivos privados correspondentes, só se os destinos ainda não existirem.
+Defina senhas localmente sem incluí-las em comandos ou relatórios. Mantenha os dois
+flags de IA em false para a validação inicial. Antes de iniciar, prove a existência
+e isolamento dos dois bancos e das roles indicados abaixo; o controlador não os cria.
+Confira o catálogo e o histórico de migrações antes de aplicar qualquer script.
+Não executar seed para tentar recuperar uma conta existente.
+
 ## Variáveis e precedência
 
 `backend/.env` e `.env.test` são privados, ignorados pelo Git e não devem ser
 copiados para comandos, relatórios ou capturas. A aplicação chama
 `load_dotenv(..., override=False)`: variáveis herdadas prevalecem quando uvicorn
-é iniciado diretamente. O controlador novo constrói o ambiente a partir do arquivo
+é iniciado diretamente. O controlador constrói o ambiente a partir do arquivo
 local, removendo previamente variáveis herdadas PG/AI/DeepSeek/SF.
 
 Principal: banco `ai_request_classifier`, role `ai_classifier_app`.
@@ -62,7 +89,9 @@ com mocks; nunca habilite transporte pago para executar a regressão.
 
 Os templates versionados usam porta 5432, role `ai_classifier_app` e, separadamente,
 `ai_classifier_test`. A role `postgres` não é o usuário de runtime. Não copiar um
-.env novo sobre a instalação recuperada. Veja [PRE_DEPLOY.md](PRE_DEPLOY.md).
+.env novo sobre a instalação recuperada. Os valores locais podem diferir das
+[cotas públicas](DEPLOY_PUBLICO.md#ia-e-interrupções); não sobrescrever uma
+configuração com a outra.
 
 ## Contas e laboratório
 
@@ -119,7 +148,9 @@ com o mesmo sandbox. Não usar `--no-sandbox` para contornar falhas.
 
 001, 002 e 003 pertencem ao MVP e já estão aplicadas nesta instalação. Não reaplicar
 sem conferir o catálogo. A evolução V2 aplicou 004, 005, 006 e 007, registradas em
-`sf_schema_versions` com checksum. A tabela original continua com 22 colunas.
+`sf_schema_versions` com checksum. A tabela original continua com 22 colunas. No banco Neon novo, o runner de nuvem
+registrou todas as migrações 001–007; esse ledger não deve ser confundido com o
+ledger aditivo 004–007 da instalação local recuperada.
 
 Para conferir por uma conexão administrativa local autorizada, somente leitura:
 
@@ -153,3 +184,13 @@ objetos existentes. Nunca usá-lo para provisionar a instalação local.
 422: confira campos ou mapeamento categoria/departamento.
 429: cota do laboratório, de login ou da IA controlada atingida.
 Sem conexão: confira PostgreSQL existente e `local_services.py status`; não reinstale.
+
+
+## Estado de verificação
+
+O baseline público foi validado com 104 testes backend, 32 frontend, build e
+navegador com mocks. O CI de cada PR é a evidência da execução correspondente;
+não presumir esses números sem rodar os checks. O workflow também verifica esquema
+novo de nuvem, backup/restauração e cookies HTTPS em bancos efêmeros. No público,
+a verificação de disponibilidade normal usa apenas GET `/` e `/health`: não criar
+pedidos pagos ou novos laboratórios como monitoramento periódico.

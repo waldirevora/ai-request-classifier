@@ -1,6 +1,6 @@
 # Critérios de classificação | SolicitaFlow
 
-**Atualização:** SolicitaFlow V2.4 — 12/11/2026. A matriz original foi definida na etapa histórica P12 e permanece inalterada.
+**Revisão documental:** publicação do SolicitaFlow — 13/11/2026. A matriz original foi definida na etapa histórica P12 e permanece inalterada.
 **Estado:** integrada ao backend e ao tutorial; parâmetros de laboratório, sem validação de política empresarial real.
 
 ## 1. Finalidade
@@ -59,6 +59,6 @@ Verificamos automaticamente:
 
 A V2 exige categoria compatível com evidências do texto, descrição suficiente e mapeamento ativo no mesmo ambiente. Não usa escore autodeclarado pelo modelo. Casos com múltiplos assuntos, categoria `outros`, informações insuficientes, destino inválido ou falha da IA vão para exceção. A heurística conservadora precisa de avaliação antes de uso empresarial.
 
-A tabela original tem 22 colunas após as migrações 001–003. O workflow e suas relações são aditivos em `sf_*`; a classificação é confirmada após persistir o pedido. O cadastro da V2 usa simulação explicitamente identificada por padrão. A integração real permanece controlada no backend.
+A tabela original tem 22 colunas após as migrações 001–003. O workflow e suas relações são aditivos em `sf_*`; a classificação é confirmada após persistir o pedido. Novos envios da demonstração tentam análise DeepSeek real pelo backend, dentro das cotas. Quando a análise não ocorre ou falha, o pedido é preservado sem sugestão fabricada. Simulação fica restrita a tutoriais, registros históricos identificados e testes automatizados com mocks.
 
-Prioridade não é política completa de SLA nem autorização de resolução. Os prazos de laboratório estão documentados em [V2.md](V2.md), com revisão humana reservada às exceções. A documentação histórica P12–P15 permanece acessível no Git; o estado atual é o SolicitaFlow V2 local. O repositório é público, mas o serviço não foi publicado.
+Prioridade não é política completa de SLA nem autorização de resolução. O laboratório usa políticas fictícias de prazo, com revisão humana reservada às exceções. A matriz e os catálogos permanecem inalterados nesta revisão. O serviço está [publicado](https://solicitaflow.onrender.com); [Arquitetura](ARQUITETURA.md), [Segurança](SEGURANCA.md) e [Deploy](DEPLOY_PUBLICO.md) documentam as fronteiras atuais. P12–P15 e os contratos V2 continuam preservados como histórico.
