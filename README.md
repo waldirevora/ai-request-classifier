@@ -2,68 +2,134 @@
 
 **Solicitações inteligentes, do pedido à resolução.**
 
-Demonstração profissional de uma solução corporativa personalizada com inteligência
-artificial, automação e acompanhamento de solicitações. **Não é um SaaS operado
-continuamente.** A base evolui do AI Request Classifier, preservando histórico e dados.
-
-A V2.6 usa **DeepSeek real** nos novos envios, com orçamento global e limites no
-backend. Empresa, personagens, atendimento e relógio são demonstrativos. Dados
-sensíveis não devem ser enviados. Leia o [contrato V2.6](docs/V2_6.md).
+**[Iniciar demonstração pública → https://solicitaflow.onrender.com](https://solicitaflow.onrender.com)**
 
 [![Verify SolicitaFlow](https://github.com/waldirevora/solicitaflow/actions/workflows/verify.yml/badge.svg)](https://github.com/waldirevora/solicitaflow/actions/workflows/verify.yml)
 
-## Experimente localmente
+SolicitaFlow é um portfólio de **Engenharia de IA e automação corporativa B2B**:
+mostra como organizar solicitações internas, identificar o departamento responsável
+e acompanhar o atendimento até a resolução. A solução demonstra uma implementação
+personalizável para empresas; não é um SaaS continuamente operado nem apresenta
+resultados empresariais ou percentuais de economia não medidos.
 
-Com os serviços existentes no Ubuntu/WSL em execução, abra
-**http://localhost:5173** e selecione **Experimentar o SolicitaFlow**. Não precisa de login ou cadastro pessoal. As chamadas de IA são reais, limitadas e custeadas pelo responsável pela demonstração. Cada visitante recebe um ambiente fictício isolado. Uma sessão válida é retomada sem nova criação ao recarregar ou entrar novamente.
+O projeto evoluiu do AI Request Classifier no mesmo repositório, preservando seu
+histórico. O desenvolvimento e a implantação pública estão concluídos neste marco.
+O acompanhamento posterior é de manutenção e monitoramento operacional.
 
-1. Como colaboradora fictícia, envie o **Exemplo de TI**.
-2. Troque para **Tecnologia**, abra o pedido e assuma o atendimento.
-3. Registre andamento e avance 6 horas: observe o risco de SLA.
-4. Avance mais 8 horas: observe cobrança e escalonamento.
-5. Registre a resolução efetiva pelo departamento.
-6. Volte à colaboradora para conferir a resposta.
-7. Entre como central para consultar pipeline, histórico e relatórios.
-8. Experimente o **Exemplo com dois assuntos** e revise a exceção na central.
+## Experimente sem login
 
-A troca de personagens só funciona nesse laboratório. Contas locais têm login
-próprio e autorização no backend. A análise DeepSeek é real; falhas ou cotas são informadas sem resposta inventada. O produto permanece **restrito ao ambiente local**, sem deploy público.
+Abra a demonstração e selecione **Experimentar o SolicitaFlow**. Não precisa de
+senha, cadastro pessoal ou configuração técnica. Cada visitante utiliza uma sessão
+anônima e um workspace fictício isolado. Use somente dados inventados.
 
-Leia também [V2.5 — primeiro acesso e laboratório](docs/V2_5.md) para conhecer a retomada, os limites e a nova home educativa.
+1. Como **Colaborador**, envie o exemplo de TI e acompanhe a análise.
+2. Como **Departamento**, abra o pedido encaminhado, assuma e registre andamento.
+3. Simule a passagem do tempo para observar risco, cobrança e escalonamento de SLA.
+4. Registre a resolução e volte ao colaborador para conferir a resposta.
+5. Como **Central Operacional**, consulte histórico, exceções e relatórios.
+6. Use o exemplo com dois assuntos para conhecer a revisão humana.
 
-## O que está implementado
+A sessão válida é retomada ao atualizar a página. Trocar personagens não exige
+novas credenciais e só funciona no laboratório isolado. Contas corporativas locais
+continuam protegidas por autenticação; esse acesso técnico não é exposto ao visitante.
 
-| Entrega | Resultado |
+**A análise DeepSeek é real e pode consumir créditos.** Empresa, personagens,
+departamentos, atendimento, relógio, cobranças e resolução são demonstrativos.
+Se houver falha, ambiguidade ou limite, o pedido fica salvo e segue para exceção,
+sem classificação inventada. A IA interpreta; as regras validam; a pessoa esclarece
+as exceções e o departamento confirma a resolução.
+
+## Arquitetura publicada
+
+```mermaid
+flowchart LR
+    V[Visitante no navegador] -->|HTTPS, mesma origem| R[Render Free]
+    R --> UI[React compilado pelo Vite]
+    R --> API[FastAPI em /api]
+    API --> PY[Python: validação, prioridade e workflow]
+    PY -->|TLS, conexão direta| DB[(Neon Free / PostgreSQL 18)]
+    API -->|Chamada controlada no backend| AI[DeepSeek]
+```
+
+| Tecnologia | Papel no fluxo |
 | --- | --- |
-| UX anterior | Quatro abas clássicas, tutorial e temas Automático/Claro/Escuro |
-| V2.1 | Departamentos, destino validado, encaminhamento automático e exceções |
-| V2.2 | Portal do Colaborador, Portal do Departamento e Central Operacional |
-| V2.3 | Responsável, pipeline, primeira resposta, resolução, SLA e alertas internos |
-| V2.4 | Jornada fictícia isolada, relógio virtual, revisão humana e relatório |
-| V2.5 | Onboarding, sessão retomável, home educativa e tipografia acessível |
-| V2.6 | Portfólio B2B, IA real, reservas globais de custo e progresso auditável |
-| V2.6.1 | Marca própria, favicons, FAQ centralizado e tema inicial Escuro |
+| React / Vite | Interface responsiva, onboarding, personagens e temas; Vite gera o bundle de produção |
+| FastAPI | API, sessões, autorização, orquestração e entrega dos arquivos estáticos |
+| Python | Validação da resposta, matriz determinística de prioridade, roteamento, SLA e relatórios |
+| DeepSeek | Sugestão estruturada de categoria, impacto, urgência e justificativa |
+| PostgreSQL 18 / Neon Free | Persistência de solicitações, decisões, eventos, sessões e reservas de custo |
+| Render Free | Um Web Service HTTPS para frontend e API, usando a porta fornecida pelo ambiente |
 
-A IA sugere categoria, impacto e urgência. Python calcula a prioridade pela matriz
-determinística existente. Assuntos inequívocos seguem ao destino ativo; incertezas
-e falhas ficam na fila de exceções. A sugestão original é preservada.
+A chave de IA permanece no backend. O serviço público não utiliza Vite de
+desenvolvimento, worker permanente ou scheduler externo. O banco público é novo e
+separado dos bancos locais; não foi feita cópia automática dos dados do WSL.
+Veja a [arquitetura técnica](docs/ARQUITETURA.md).
 
-## Baseline para a próxima fase
+## Funcionalidades concluídas
 
-A V2.6.1 corresponde ao merge `8acaf71` (PR #14). A consolidação posterior corrige
-exemplos, documentação e a dependência de testes; não é um deploy nem migra o banco.
-Veja a [auditoria e os bloqueios de publicação](docs/PRE_DEPLOY.md). A tag `v2.6.1`,
-quando presente, identifica o commit da versão, não o baseline posterior de preparação.
+- Landing comercial e educativa, demonstração sem senha e orientações por personagem.
+- Cadastro persistente antes da tentativa de análise real.
+- Categoria, impacto, urgência e justificativa sugeridos pela IA; prioridade calculada pela matriz Python.
+- Encaminhamento automático apenas com destino validado; revisão humana de exceções.
+- Portais do Colaborador, Departamento e Central Operacional com autorização por recurso.
+- Responsável, andamento, primeira resposta, resolução, histórico e relatórios.
+- SLA fictício, passagem do tempo, alertas internos e escalonamento sem mensagens externas.
+- Sessões retomáveis, isolamento entre visitantes, expiração e retenção de temporários.
+- Temas Claro, Escuro e Automático; primeiro acesso em Escuro, escolhas anteriores preservadas.
+- Marca própria, favicons, layout responsivo, foco e navegação por teclado.
+- Limites persistentes de IA, idempotência, concorrência restrita e tratamento seguro de interrupções.
 
-Os templates `backend/.env.example` e `backend/.env.test.example` usam porta 5432 e
-roles limitadas distintas. Copie-os apenas para uma instalação nova; não sobrescreva
-credenciais locais já existentes. Ambos deixam chamadas reais de IA desabilitadas.
+O tutorial e a matriz funcionam sem chamar IA. Não há medição estatística publicada
+de acurácia empresarial; os critérios e limites estão em
+[Critérios de classificação](docs/CRITERIOS_CLASSIFICACAO.md).
 
-## Stack e execução
+## Limites ativos da demonstração
 
-React 19, Vite 6, Python 3.12, FastAPI, PostgreSQL 18 e integração DeepSeek no backend.
-Na instalação recuperada, binários/credenciais locais continuam nos caminhos
-históricos; a mudança de marca não renomeia bancos, tabelas ou diretórios.
+Configuração validada na publicação de 13/11/2026; não confundir com os defaults dos
+exemplos de desenvolvimento local.
+
+| Controle | Limite público |
+| --- | --- |
+| Tentativas de IA globais | 10 por dia UTC |
+| Tentativas por laboratório | 2 durante a vida do workspace |
+| Tentativas por rede | 5 por hora |
+| Reserva global de tokens | 100.000 por dia |
+| Orçamento conservador reservado | US$ 0,05 por dia |
+| Chamadas simultâneas | 1 |
+| Saída da IA / timeout | Até 400 tokens / 12 segundos |
+
+Reservas são persistidas antes da chamada. Falhas não devolvem a reserva;
+reenvios idempotentes e reinícios não repetem automaticamente chamadas pagas.
+Consumo desconhecido exige conferência pelo operador. Quando um limite impede a
+análise, o pedido permanece salvo e a interface informa o motivo.
+
+Esse é um limite da integração, não um teto de faturamento de toda a conta DeepSeek.
+Os planos Render/Neon utilizados são gratuitos; o uso de IA consome os créditos
+existentes. Detalhes de sessões, criação de laboratórios, retenção e recuperação:
+[Deploy e operação](docs/DEPLOY_PUBLICO.md) e [Segurança](docs/SEGURANCA.md).
+
+## Disponibilidade do laboratório
+
+O Render Free suspende o serviço após cerca de 15 minutos sem tráfego. O próximo
+acesso inicia o serviço novamente e pode levar aproximadamente um minuto, com
+variação conforme o provedor. O Neon também suspende o compute ocioso. Aguarde a
+inicialização antes de concluir que houve falha; não reenvie pedidos repetidamente.
+
+Não há SLA de produção ou monitoramento contínuo de prazos: o SLA fictício é
+avaliado por eventos e pelo relógio do laboratório. **Não foi instalado gatilho
+periódico do Neon, cron de keep-alive ou mecanismo para impedir a suspensão nativa.**
+As franquias dos planos gratuitos podem limitar a disponibilidade.
+[Limites oficiais do Render](https://render.com/docs/free) e
+[Neon Free](https://neon.com/docs/introduction/plans).
+
+## Desenvolvimento local
+
+A cópia ativa está em `~/projects/ai-request-classifier`, no Ubuntu/WSL, com
+Python 3.12, Node.js 24 e PostgreSQL 18 em `127.0.0.1:5432`. Caminhos e nomes dos
+bancos mantêm os identificadores históricos para preservar compatibilidade.
+O [Guia local](docs/GUIA.md) descreve dependências, variáveis e migrações.
+
+Na instalação existente:
 
 ```bash
 cd ~/projects/ai-request-classifier
@@ -71,24 +137,22 @@ backend/.venv/bin/python scripts/local_services.py start
 backend/.venv/bin/python scripts/local_services.py status
 ```
 
-O comando valida a conexão existente e inicia somente backend, frontend e scheduler.
-Ele **não administra PostgreSQL**. Se o banco estiver parado, falha sem alterar sua
-instalação. Processos usam loopback e continuam enquanto o WSL e os processos
-permanecerem ativos. Não há promessa de persistência após desligar o WSL.
-
-- Interface: http://localhost:5173
-- Swagger: http://localhost:8000/docs
-- Saúde via proxy: http://localhost:5173/api/health
-
-Para encerrar somente os três processos da aplicação:
+Interface: http://localhost:5173 · Swagger local: http://localhost:8000/docs.
+O controlador inicia somente backend, frontend e scheduler **local**, em loopback;
+não instala, inicia ou encerra PostgreSQL. Para parar apenas a aplicação:
 
 ```bash
 backend/.venv/bin/python scripts/local_services.py stop
 ```
 
-## Verificação
+Não sobrescreva `.env` ou `.env.test` existentes. Os templates locais deixam a IA
+real desabilitada e usam roles distintas de aplicação e testes, sem superusuário
+no runtime. O template de produção não deve ser aplicado à instalação local.
+
+## Testes e evidências
 
 ```bash
+cd ~/projects/ai-request-classifier
 backend/.venv/bin/python scripts/local_services.py test
 export PATH="$HOME/.local/opt/ai-request-classifier/node/bin:$PATH"
 cd frontend
@@ -97,35 +161,40 @@ npm test
 npm run build
 ```
 
-O comando de backend confirma identidade, porta, versão, role e isolamento antes
-de qualquer limpeza do banco de testes. Também confere que o snapshot do principal
-não mudou. Chamadas reais à IA são bloqueadas durante pytest.
+O preflight comprova o banco `ai_request_classifier_test`, sua role exclusiva e a
+ausência de CONNECT no principal antes de qualquer limpeza. Verifica também o
+snapshot do banco principal. Não execute pytest e QA de navegador em paralelo.
+A suíte bloqueia ou simula o transporte da IA; não gera consumo pago.
 
-O CI executa as migrações sobre PostgreSQL 18 efêmero, preserva um registro legado,
-testa rerun/checksums e roda backend, frontend, build e jornada de navegador com axe.
-Capturas ficam nos artefatos do workflow, sem credenciais ou dumps.
+Baseline funcional publicado: **104 testes backend, 32 frontend e build aprovados**.
+O CI usa PostgreSQL 18 efêmero para migrações, compatibilidade, isolamento,
+backup/restauração e duas jornadas de navegador de 17 passos com mocks. A URL
+pública teve validação HTTPS desktop/mobile e nove estados axe sem violações.
+Esses resultados têm escopo definido; não representam certificação integral de
+acessibilidade, segurança ou qualidade estatística da IA.
+Veja [evidências e encerramento](docs/ENCERRAMENTO.md) e os checks do PR atual.
 
-## Documentação
+## Versões e documentação
 
-- [Guia operacional](docs/GUIA.md): ambiente, comandos, contas e testes.
-- [Consolidação pré-deploy](docs/PRE_DEPLOY.md): branches, arquivos legados, segurança e viabilidade.
-- [V2.6.1](docs/V2_6_1.md): marca, FAQ e preferência inicial Escuro.
-- [V2.6 e controle de IA](docs/V2_6.md): experiência comercial, limites e testes.
-- [Contrato V2 histórico](docs/V2.md): roteamento, autorização, pipeline, SLA e limites.
-- [Arquitetura](docs/ARQUITETURA.md): componentes, dados e evolução do MVP.
-- [Critérios de classificação](docs/CRITERIOS_CLASSIFICACAO.md): matriz e catálogos.
-- [Segurança e evidências](docs/ENTREGA_V2.md): verificações e pendências.
+A tag histórica **`v2.6.1`** aponta para
+[`8acaf71`](https://github.com/waldirevora/solicitaflow/commit/8acaf71ef36bc74de353a248ddd100318f21a67e)
+(PR #14: identidade visual, FAQ e tema inicial). Não foi movida: não identifica o
+deploy posterior. O baseline funcional público é
+[`e894487`](https://github.com/waldirevora/solicitaflow/commit/e8944877d1d208a24cf0061ea5caa3c417f69d87),
+após os PRs #16–#18. Commits posteriores de encerramento atualizam somente documentos;
+com auto-deploy desabilitado, não mudam o SHA em execução no Render.
 
-Nunca versione `.env`, `.env.test`, senhas, chaves, dumps ou backups. Não publique
-a API local diretamente na internet. Render + Neon continuam uma etapa futura.
+| Documento | Finalidade |
+| --- | --- |
+| [Guia local](docs/GUIA.md) | Preparar e executar desenvolvimento e testes isolados |
+| [Arquitetura](docs/ARQUITETURA.md) | Componentes, dados e diferenças entre nuvem e ambiente local |
+| [Segurança](docs/SEGURANCA.md) | Sessões, autorização, proteção contra abuso e limites |
+| [Deploy e manutenção](docs/DEPLOY_PUBLICO.md) | Infraestrutura, migrações, backup, recuperação e atualização segura |
+| [Encerramento](docs/ENCERRAMENTO.md) | Baseline, evidências e manutenção após a entrega |
+| [Critérios de classificação](docs/CRITERIOS_CLASSIFICACAO.md) | Catálogos, matriz determinística e avaliação |
+| [Histórico pré-deploy](docs/PRE_DEPLOY.md) | Auditoria anterior, decisões e preservação dos arquivos legados |
+| [V2.6.1 histórica](docs/V2_6_1.md) | Entrega visual associada à tag preservada |
 
-O teste de navegador agora exige backend de QA com mocks e recusa o serviço real.
-Use `scripts/qa_local.py start`, `scripts/qa_local.py browser` e
-`scripts/qa_local.py stop` com o Python do backend. Isso reinicia somente o banco
-**de testes**, não o principal. Não execute pytest e QA de navegador em paralelo.
-O contato comercial usa apenas `SF_CONTACT_URL` confirmado pelo proprietário;
-nenhum endereço é presumido. Sem esse valor, o botão de contato não é mostrado.
-
-## Demonstração pública controlada
-
-A preparação para uma origem HTTPS única no Render Free e banco separado no Neon Free está descrita em [Deploy público](docs/DEPLOY_PUBLICO.md). O serviço inicia em manutenção, com IA desligada. A instalação local continua independente. Não use Vite como servidor público.
+Nunca versione `.env`, credenciais, dumps, backups, logs sensíveis ou artefatos
+privados. O contato comercial só é exibido quando `SF_CONTACT_URL` está configurado
+com um canal profissional confirmado; nenhum endereço é presumido.

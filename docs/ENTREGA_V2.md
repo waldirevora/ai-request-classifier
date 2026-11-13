@@ -1,5 +1,11 @@
 # Entrega SolicitaFlow V2 — 12/11/2026
 
+> **Registro histórico.** Este documento preserva o estado, os testes e as decisões
+> da etapa em que foi produzido. Menções a operação somente local, publicação futura,
+> simulação ou pendências valem para aquela etapa. O serviço atual está publicado;
+> consulte [README](../README.md), [deploy e manutenção](DEPLOY_PUBLICO.md) e
+> [encerramento do marco](ENCERRAMENTO.md) antes de executar qualquer roteiro antigo.
+
 ## Git e preservação
 
 O mesmo repositório foi renomeado para

@@ -1,5 +1,11 @@
 # Relatório de avaliação | AI Request Classifier
 
+> **Registro histórico.** Este documento preserva o estado, os testes e as decisões
+> da etapa em que foi produzido. Menções a operação somente local, publicação futura,
+> simulação ou pendências valem para aquela etapa. O serviço atual está publicado;
+> consulte [README](../README.md), [deploy e manutenção](DEPLOY_PUBLICO.md) e
+> [encerramento do marco](ENCERRAMENTO.md) antes de executar qualquer roteiro antigo.
+
 **Status:** avaliação exploratória P15 executada; conclusões limitadas aos dez casos fictícios da P12.
 **Data da execução:** 16/10/2026 (referência da conversa; confirmar o registro local se necessário).
 **Modelo configurado:** `deepseek-flash` (identificador configurado no script; o relatório não comprova revisão interna exata do provedor).
