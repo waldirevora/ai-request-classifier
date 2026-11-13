@@ -5,11 +5,11 @@ from playwright.sync_api import sync_playwright,expect
 
 BASE=os.getenv('SF_BROWSER_BASE_URL','http://127.0.0.1:5173')
 
-def run(output,axe=None):
+def run(output,axe=None,channel=None):
     output.mkdir(parents=True,exist_ok=True)
     evidence={'theme_cases':[],'axe':[],'screenshots':[],'api_mutations':0,'paid_calls':0}
     with sync_playwright() as playwright:
-        browser=playwright.chromium.launch(chromium_sandbox=True)
+        browser=playwright.chromium.launch(chromium_sandbox=True,channel=channel)
         def context(saved=None,scheme='light'):
             ctx=browser.new_context(viewport={'width':1440,'height':1000},color_scheme=scheme)
             def readonly(route):
@@ -113,4 +113,5 @@ def run(output,axe=None):
 
 if __name__=='__main__':
     parser=argparse.ArgumentParser();parser.add_argument('--output',type=Path,default=Path('/tmp/solicitaflow-brand-captures'));parser.add_argument('--axe',type=Path)
-    args=parser.parse_args();run(args.output,args.axe)
+    parser.add_argument('--channel',choices=['chrome','msedge','chromium'])
+    args=parser.parse_args();run(args.output,args.axe,args.channel)
