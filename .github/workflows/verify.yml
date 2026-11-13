@@ -41,9 +41,22 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - name: Install backend and browser tools
-        run: python -m pip install -r backend/requirements-dev.txt playwright==1.65.1
+        run: python -m pip install -r backend/requirements-dev.txt -r backend/requirements-ops.txt playwright==1.65.1
       - name: Bootstrap isolated databases and check additive compatibility
         run: python scripts/ci_database.py
+      - name: Fresh cloud schema and encrypted restore
+        env:
+          PGUSER: postgres
+          PGDATABASE: postgres
+          PGPASSWORD: ci-only-${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/pg18"
+          for tool in pg_dump pg_restore; do
+            printf '#!/bin/sh\nexec docker exec -i -e PGUSER -e PGPASSWORD -e PGDATABASE -e PGHOST -e PGPORT %s %s "$@"\n' '${{ job.services.postgres.id }}' "$tool" > "$RUNNER_TEMP/pg18/$tool"
+            chmod +x "$RUNNER_TEMP/pg18/$tool"
+          done
+          export PATH="$RUNNER_TEMP/pg18:$PATH"
+          python scripts/ci_cloud.py
       - name: Backend (real AI blocked)
         working-directory: backend
         run: python -m pytest -q
@@ -71,6 +84,8 @@ jobs:
           python scripts/wait_local.py
           python scripts/browser_brand.py --output "$RUNNER_TEMP/captures" --axe "$RUNNER_TEMP/qa/node_modules/axe-core/axe.min.js" --channel chrome
           python scripts/browser_lab.py --output "$RUNNER_TEMP/captures" --axe "$RUNNER_TEMP/qa/node_modules/axe-core/axe.min.js" --channel chrome
+      - name: Public HTTPS, compiled UI, cookies, SLA and isolation (mock AI)
+        run: python scripts/run_public_qa.py --output "$RUNNER_TEMP/captures/public" --axe "$RUNNER_TEMP/qa/node_modules/axe-core/axe.min.js" --channel chrome
       - name: Browser evidence
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

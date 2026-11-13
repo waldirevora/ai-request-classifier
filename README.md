@@ -125,3 +125,7 @@ Use `scripts/qa_local.py start`, `scripts/qa_local.py browser` e
 **de testes**, não o principal. Não execute pytest e QA de navegador em paralelo.
 O contato comercial usa apenas `SF_CONTACT_URL` confirmado pelo proprietário;
 nenhum endereço é presumido. Sem esse valor, o botão de contato não é mostrado.
+
+## Demonstração pública controlada
+
+A preparação para uma origem HTTPS única no Render Free e banco separado no Neon Free está descrita em [Deploy público](docs/DEPLOY_PUBLICO.md). O serviço inicia em manutenção, com IA desligada. A instalação local continua independente. Não use Vite como servidor público.

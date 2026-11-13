@@ -66,18 +66,21 @@ def reservation(title, description, policy):
 
 @contextmanager
 def capacity(policy):
-    """Session advisory locks survive transaction commits, disappear on worker death."""
-    with conectar() as lock_conn:
-        slot = None
+    """Session lock plus the durable reservation gate protects connection loss."""
+    import psycopg
+    lock_conn=conectar();slot=None
+    try:
         for index in range(policy.concurrent):
-            if lock_conn.execute('SELECT pg_try_advisory_lock(%s,%s) AS ok', (GLOBAL_LOCK,index)).fetchone()['ok']:
-                slot = index
-                break
+            if lock_conn.execute('SELECT pg_try_advisory_lock(%s,%s) AS ok',(GLOBAL_LOCK,index)).fetchone()['ok']:
+                slot=index;break
+        lock_conn.commit()
+        yield slot is not None
+    finally:
         try:
-            yield slot is not None
-        finally:
             if slot is not None:
-                lock_conn.execute('SELECT pg_advisory_unlock(%s,%s)', (GLOBAL_LOCK,slot))
+                lock_conn.execute('SELECT pg_advisory_unlock(%s,%s)',(GLOBAL_LOCK,slot));lock_conn.commit()
+        except psycopg.Error:pass
+        finally:lock_conn.close()
 
 
 def configuration_error():
@@ -98,6 +101,8 @@ def reserve(conn, record, policy, title, description, peer):
     usage = conn.execute('''SELECT count(*) AS calls,coalesce(sum(reserved_tokens),0) AS tokens,
         coalesce(sum(reserved_usd),0) AS usd FROM sf_ai_attempts WHERE day=%s''', (day,)).fetchone()
     workspace = conn.execute('SELECT count(*) AS calls FROM sf_ai_attempts WHERE workspace_id=%s', (record['workspace_id'],)).fetchone()['calls']
+    pending=conn.execute("SELECT count(*) AS n,min(created_at)<now()-interval '5 minutes' AS stale FROM sf_ai_attempts WHERE status='reserved'").fetchone()
+    if pending['n']>=policy.concurrent:return 'consumo_pendente' if pending['stale'] else 'capacidade_ocupada'
     tokens, usd = reservation(title, description, policy)
     if workspace >= policy.workspace_calls: return 'cota_ambiente'
     if usage['calls'] >= policy.daily_calls: return 'cota_global'
@@ -154,7 +159,7 @@ def analyze(case_id, peer):
     with conectar() as conn:
         current = conn.execute('SELECT * FROM sf_cases WHERE id=%s FOR UPDATE', (case_id,)).fetchone()
         if current['state'] != 'analisando': return
-        blocked = code in ('ia_desabilitada','chave_ausente','modelo_nao_aprovado','politica_invalida','capacidade_ocupada','cota_ambiente','cota_global','orcamento_esgotado','limite_rede','tentativa_ja_reservada')
+        blocked = code in ('ia_desabilitada','chave_ausente','modelo_nao_aprovado','politica_invalida','capacidade_ocupada','cota_ambiente','cota_global','orcamento_esgotado','limite_rede','tentativa_ja_reservada','consumo_pendente')
         conn.execute('UPDATE sf_cases SET analysis_status=%s,analysis_code=%s,analysis_finished_at=now() WHERE id=%s',
             ('succeeded' if result else 'blocked' if blocked else 'failed',code,case_id))
         event(conn,case,'ia_concluida' if result else 'ia_nao_concluida',{'code':code,'message':'A DeepSeek concluiu a análise. As regras Python validarão a prioridade e o destino.' if result else 'A análise não foi concluída. O pedido está salvo e seguirá para a Central de Exceções.'})

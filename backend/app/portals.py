@@ -5,7 +5,7 @@ from uuid import UUID,uuid4
 from fastapi import APIRouter,Depends,HTTPException,Request,Response,BackgroundTasks
 from pydantic import BaseModel,Field,ConfigDict
 from app.database import conectar
-from app.identity import actor,require,issue_session,password_matches,public_actor,rate_limit,visible_case,context
+from app.identity import session_cookie,actor,require,issue_session,password_matches,public_actor,rate_limit,visible_case,context
 from app.routing import event
 from app.ai_control import analyze,fingerprint
 from app.schemas import SolicitacaoEntrada
@@ -36,8 +36,15 @@ def session(who=Depends(actor)):return public_actor(who)
 @router.post('/logout',status_code=204)
 def logout(request:Request,response:Response,who=Depends(actor)):
     kind=context(request)
-    with conectar() as conn:conn.execute('DELETE FROM sf_sessions WHERE token_hash=%s',(hashlib.sha256(request.cookies['sf_'+kind].encode()).hexdigest(),))
-    response.delete_cookie('sf_'+kind,path='/')
+    with conectar() as conn:conn.execute('DELETE FROM sf_sessions WHERE token_hash=%s',(hashlib.sha256(request.cookies[session_cookie(kind)].encode()).hexdigest(),))
+    response.delete_cookie(session_cookie(kind),path='/',secure=os.getenv('SF_ENV')=='production',httponly=True,samesite='strict')
+
+def public_activity(who):
+    if os.getenv('SF_ENV')=='production' and who['kind']=='lab':
+        from app.retention import activity
+        from app.workflow import evaluate
+        activity()
+        with conectar() as conn:evaluate(conn,who['workspace_id'])
 
 class CreateCase(SolicitacaoEntrada):
     client_key:UUID
@@ -70,6 +77,7 @@ def create_case(data:CreateCase,request:Request, response:Response,background_ta
 
 @router.get('/cases')
 def cases(who=Depends(actor)):
+    public_activity(who)
     with conectar() as conn:
         clause=''
         params=[who['workspace_id']]
@@ -81,6 +89,7 @@ def cases(who=Depends(actor)):
 
 @router.get('/cases/{case_id}')
 def detail(case_id:UUID,who=Depends(actor)):
+    public_activity(who)
     with conectar() as conn:
         case=visible_case(conn,who,case_id)
         from app.workflow import sla_state,now_for
