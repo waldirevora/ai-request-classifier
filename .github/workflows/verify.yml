@@ -69,6 +69,7 @@ jobs:
           (python scripts/browser_backend.py > "$RUNNER_TEMP/backend.log" 2>&1) &
           (cd frontend && npm run dev -- --host 127.0.0.1 > "$RUNNER_TEMP/frontend.log" 2>&1) &
           python scripts/wait_local.py
+          python scripts/browser_brand.py --output "$RUNNER_TEMP/captures" --axe "$RUNNER_TEMP/qa/node_modules/axe-core/axe.min.js" --channel chrome
           python scripts/browser_lab.py --output "$RUNNER_TEMP/captures" --axe "$RUNNER_TEMP/qa/node_modules/axe-core/axe.min.js" --channel chrome
       - name: Browser evidence
         if: always()

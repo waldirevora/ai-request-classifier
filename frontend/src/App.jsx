@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "./api.js";
+import BrandLogo from "./BrandLogo.jsx";
 import { isPending } from "./domain.js";
 import { useTheme } from "./useTheme.js";
 import { Icon } from "./components/Primitives.jsx";
@@ -168,13 +169,7 @@ export default function App() {
             }}
             aria-label="SolicitaFlow — visão geral"
           >
-            <span className="brand-icon">SF</span>
-            <span>
-              <strong>
-                SolicitaFlow
-              </strong>
-              <small>Do pedido à resolução.</small>
-            </span>
+            <BrandLogo tagline="Do pedido à resolução." />
           </a>
           <p className="nav-label">CENTRAL DE SOLICITAÇÕES</p>
           <nav

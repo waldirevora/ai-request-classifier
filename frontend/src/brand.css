@@ -1,0 +1,59 @@
+/* The supplied variants target the background, not the selected mode. */
+.sf-brand-identity {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+}
+.sf-brand-logo {
+  display: block;
+  width: 17rem;
+  max-width: 100%;
+}
+.sf-brand-logo img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.sf-brand-logo .sf-logo-light {
+  display: none;
+}
+:root[data-theme="light"] .sf-brand-logo .sf-logo-dark {
+  display: none;
+}
+:root[data-theme="light"] .sf-brand-logo .sf-logo-light {
+  display: block;
+}
+.brand .sf-brand-logo {
+  width: 14rem;
+}
+.sf-faq-section {
+  width: 100%;
+  max-width: 58rem;
+  margin-inline: auto;
+}
+.sf-faq-section .sf-section-intro {
+  margin-inline: auto;
+  text-align: center;
+}
+.sf-faq-section .sf-faq {
+  width: 100%;
+  margin-inline: auto;
+  text-align: left;
+}
+.sf-technical-link {
+  display: block;
+  margin: 1rem auto 0;
+  padding: 0.5rem 0.75rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  cursor: pointer;
+  min-height: 2.75rem;
+}
+.sf-technical-access[hidden] {
+  display: none;
+}

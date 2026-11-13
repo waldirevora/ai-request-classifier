@@ -1,11 +1,11 @@
 // Executado antes do React e dos estilos para evitar flash do tema incorreto.
 (function () {
-  var mode = "auto";
+  var mode = "dark";
   try {
     var saved = localStorage.getItem("arc-theme");
     if (["auto", "light", "dark"].indexOf(saved) !== -1) mode = saved;
   } catch (_) {
-    /* Armazenamento indisponível: acompanhar o sistema. */
+    /* Armazenamento indisponível: usar o padrão escuro. */
   }
   var dark =
     window.matchMedia &&

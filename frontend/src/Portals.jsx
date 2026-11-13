@@ -7,6 +7,7 @@ import {
   reasonLabels,
 } from "./portal-api.js";
 import App from "./App.jsx";
+import BrandLogo from "./BrandLogo.jsx";
 import AnalysisJourney from "./AnalysisJourney.jsx";
 import { submissionFor } from "./analysis-client.js";
 import Landing, { FirstSteps, HeroPreview } from "./Landing.jsx";
@@ -46,6 +47,10 @@ export default function Portals() {
   const [retryAt, setRetryAt] = useState(null);
   const [who, setWho] = useState(null);
   const [technical, setTechnical] = useState(false);
+  const technicalLogin = useRef(null);
+  useEffect(() => {
+    if (technical) technicalLogin.current?.focus();
+  }, [technical]);
   const [presentation, setPresentation] = useState(null);
   const submission = useRef(null);
   useEffect(() => {
@@ -346,16 +351,13 @@ export default function Portals() {
         <a
           href="#"
           className="sf-brand"
+          aria-label="SolicitaFlow — início"
           onClick={(e) => {
             e.preventDefault();
             setPage("portal");
           }}
         >
-          <span className="brand-icon">SF</span>
-          <span>
-            <strong>SolicitaFlow</strong>
-            <small>Solicitações inteligentes, do pedido à resolução.</small>
-          </span>
+          <BrandLogo />
         </a>
         <div className="sf-tools">
           {context === "lab" ? (
@@ -994,16 +996,12 @@ export default function Portals() {
               busy={busy}
               contactUrl={presentation?.contact_url}
             />
-            <details
+            <section
+              id="local-technical-access"
               className="sf-technical-access"
-              open={technical}
-              onToggle={(e) => setTechnical(e.currentTarget.open)}
+              aria-label="Acesso local autenticado"
+              hidden={!technical}
             >
-              <summary>Acesso técnico aos portais</summary>
-              <p>
-                Área secundária para quem já recebeu uma conta local. Visitantes
-                podem usar a demonstração sem credenciais.
-              </p>
               {context !== "local" ? (
                 <button
                   className="button secondary"
@@ -1021,6 +1019,7 @@ export default function Portals() {
                   <label>
                     Usuário
                     <input
+                      ref={technicalLogin}
                       autoComplete="username"
                       required
                       value={login.username}
@@ -1046,7 +1045,7 @@ export default function Portals() {
                   </button>
                 </form>
               )}
-            </details>
+            </section>
           </>
         )}
 
@@ -1059,6 +1058,17 @@ export default function Portals() {
       <footer className="sf-footer">
         SolicitaFlow · Laboratório local · Decisões rastreáveis, dados fictícios
         · Sem publicação na internet
+        {ready && !who && (
+          <button
+            type="button"
+            className="sf-technical-link"
+            aria-controls="local-technical-access"
+            aria-expanded={technical}
+            onClick={() => setTechnical((open) => !open)}
+          >
+            Acesso técnico
+          </button>
+        )}
       </footer>
     </div>
   );

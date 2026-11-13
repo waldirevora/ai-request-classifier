@@ -290,7 +290,7 @@ export default function Landing({ onExplore, busy, contactUrl }) {
         </div>
       </section>
       <section
-        className="sf-product-section sf-section-stack"
+        className="sf-product-section sf-section-stack sf-faq-section"
         aria-labelledby="flow-faq"
       >
         <div className="sf-section-intro">
