@@ -11,8 +11,8 @@ Evolução do **AI Request Classifier**, preservando o mesmo histórico Git e ba
 ## Experimente localmente
 
 Com os serviços existentes no Ubuntu/WSL em execução, abra
-**http://localhost:5173** e selecione **Explorar laboratório**. Não precisa de senha,
-cadastro real ou créditos de IA. Cada visitante recebe um ambiente fictício isolado.
+**http://localhost:5173** e selecione **Explorar demonstração gratuita**. Não precisa de senha,
+cadastro real ou créditos de IA. Cada visitante recebe um ambiente fictício isolado. Uma sessão válida é retomada sem nova criação ao recarregar ou entrar novamente.
 
 1. Como colaboradora fictícia, envie o **Cenário automático**.
 2. Troque para **Tecnologia**, abra o pedido e assuma o atendimento.
@@ -27,6 +27,8 @@ A troca de personagens só funciona nesse laboratório. Contas locais têm login
 próprio e autorização no backend. Simulação é identificada; não é uma chamada real
 à DeepSeek. O produto permanece **restrito ao ambiente local**, sem deploy público.
 
+Leia também [V2.5 — primeiro acesso e laboratório](docs/V2_5.md) para conhecer a retomada, os limites e a nova home educativa.
+
 ## O que está implementado
 
 | Entrega | Resultado |
@@ -36,6 +38,7 @@ próprio e autorização no backend. Simulação é identificada; não é uma ch
 | V2.2 | Portal do Colaborador, Portal do Departamento e Central Operacional |
 | V2.3 | Responsável, pipeline, primeira resposta, resolução, SLA e alertas internos |
 | V2.4 | Jornada fictícia isolada, relógio virtual, revisão humana e relatório |
+| V2.5 | Onboarding, sessão retomável, home educativa e tipografia acessível |
 
 A IA sugere categoria, impacto e urgência. Python calcula a prioridade pela matriz
 determinística existente. Assuntos inequívocos seguem ao destino ativo; incertezas

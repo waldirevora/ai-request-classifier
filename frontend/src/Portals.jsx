@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useTheme } from "./useTheme.js";
 import {
   portalApi,
@@ -7,10 +7,13 @@ import {
   reasonLabels,
 } from "./portal-api.js";
 import App from "./App.jsx";
+import Landing, { FirstSteps } from "./Landing.jsx";
+import { enterLaboratory } from "./lab-entry.js";
 import { LabGuide } from "./LabGuide.jsx";
 import { WorkPanel, OperationalReports } from "./Operations.jsx";
 import ProcessEducation from "./ProcessEducation.jsx";
 import "./portals.css";
+import "./onboarding.css";
 
 const categories = {
   suporte_ti: "Suporte de TI",
@@ -22,15 +25,22 @@ const categories = {
 const format = (value) =>
   value ? new Date(value).toLocaleString("pt-BR") : "Ainda não registrado";
 
+function readContext() {
+  try {
+    const value = sessionStorage.getItem("sf-context");
+    return ["local", "lab"].includes(value) ? value : null;
+  } catch {
+    return null;
+  }
+}
+
 export default function Portals() {
   const [theme, chooseTheme] = useTheme();
-  const [context, setContext] = useState(() => {
-    try {
-      return sessionStorage.getItem("sf-context") || "local";
-    } catch {
-      return "local";
-    }
-  });
+  const [context, setContext] = useState(() => readContext() || "local");
+  const discoverLab = useRef(readContext() === null);
+  const entryPending = useRef(false);
+  const [sessionExpired, setSessionExpired] = useState(false);
+  const [retryAt, setRetryAt] = useState(null);
   const [who, setWho] = useState(null);
   const [actors, setActors] = useState([]);
   const [clock, setClock] = useState(null);
@@ -55,35 +65,56 @@ export default function Portals() {
     reason: "",
   });
   const call = (path, options) => portalApi(context, path, options);
-  async function refresh(person = who) {
+  async function refresh(person = who, scope = context) {
     if (!person) return;
     const [rows, deps] = await Promise.all([
-      call("/cases"),
-      call("/departments"),
+      portalApi(scope, "/cases"),
+      portalApi(scope, "/departments"),
     ]);
     setItems(rows);
     setDepartments(deps);
-    if (person.role === "central") setRoutes(await call("/routes"));
+    if (person.role === "central") setRoutes(await portalApi(scope, "/routes"));
   }
   useEffect(() => {
     let active = true;
+    let transferred = false;
     setReady(false);
     setSelected(null);
-    portalApi(context, "/session")
-      .then(async (person) => {
+    setSessionExpired(false);
+    (async () => {
+      try {
+        const person = await portalApi(context, "/session");
         if (!active) return;
         setWho(person);
-        await refresh(person);
-      })
-      .catch((e) => {
-        if (active) {
-          setWho(null);
-          if (e.status !== 401) setError(e.message);
+        await refresh(person, context);
+      } catch (error) {
+        if (!active) return;
+        if (
+          error.status === 401 &&
+          context === "local" &&
+          discoverLab.current
+        ) {
+          discoverLab.current = false;
+          try {
+            const resumed = await portalApi("lab", "/session");
+            if (!active) return;
+            transferred = true;
+            changeContext("lab");
+            setWho(resumed);
+            return;
+          } catch (discoveryError) {
+            if (discoveryError.status !== 401 && active)
+              setError(discoveryError.message);
+          }
         }
-      })
-      .finally(() => {
-        if (active) setReady(true);
-      });
+        if (!active) return;
+        setWho(null);
+        if (error.status === 401 && context === "lab") setSessionExpired(true);
+        if (error.status !== 401) setError(error.message);
+      } finally {
+        if (active && !transferred) setReady(true);
+      }
+    })();
     return () => {
       active = false;
     };
@@ -92,10 +123,19 @@ export default function Portals() {
     setBusy(true);
     setError("");
     setNotice("");
+    setRetryAt(null);
     try {
       await action();
     } catch (e) {
       setError(e.message);
+      if (e.status === 429) setRetryAt(e.retryAt);
+      if (e.status === 401) {
+        setWho(null);
+        setSelected(null);
+        setItems([]);
+        setPage("portal");
+        if (context === "lab") setSessionExpired(true);
+      }
     } finally {
       setBusy(false);
     }
@@ -106,6 +146,11 @@ export default function Portals() {
     } catch {
       /* Current tab only. */
     }
+    discoverLab.current = false;
+    setWho(null);
+    setItems([]);
+    setDepartments([]);
+    setRoutes([]);
     setContext(next);
     setPage("portal");
     setSelected(null);
@@ -134,25 +179,47 @@ export default function Portals() {
     };
   }, [who?.id]);
   async function startLab() {
-    await run(async () => {
-      const person = await portalApi("lab", "/lab/start", { method: "POST" });
-      changeContext("lab");
-      setWho(person);
-      setReady(true);
-      if (context === "lab") await refresh(person);
+    if (entryPending.current) return;
+    entryPending.current = true;
+    try {
+      await run(async () => {
+        const { who: person, resumed } = await enterLaboratory();
+        changeContext("lab");
+        setWho(person);
+        setSessionExpired(false);
+        await refresh(person, "lab");
+        setReady(true);
+        setNotice(
+          resumed
+            ? "Demonstração retomada. Seus pedidos e o relógio foram mantidos."
+            : "Sua demonstração gratuita está pronta. Comece pelo cenário automático.",
+        );
+      });
+    } finally {
+      entryPending.current = false;
+    }
+  }
+  async function activateActor(username) {
+    const person = await call("/lab/switch", {
+      method: "POST",
+      body: { username },
     });
+    setWho(person);
+    setSelected(null);
+    setPage("portal");
+    setFilter("all");
+    await refresh(person);
   }
   async function switchActor(username) {
+    await run(() => activateActor(username));
+  }
+  async function restartGuide() {
     await run(async () => {
-      const person = await call("/lab/switch", {
-        method: "POST",
-        body: { username },
-      });
-      setWho(person);
-      setSelected(null);
-      setPage("portal");
-      setFilter("all");
-      await refresh(person);
+      await activateActor("colaborador");
+      setDraft({ titulo: "", descricao: "" });
+      setNotice(
+        "Roteiro reiniciado com o Colaborador. Pedidos, histórico e relógio foram preservados; nenhum laboratório novo foi criado.",
+      );
     });
   }
   async function advance(hours) {
@@ -202,7 +269,13 @@ export default function Portals() {
   if (classic)
     return (
       <>
-        <button className="classic-return" onClick={() => { chooseTheme(document.documentElement.dataset.themeChoice || "auto"); setClassic(false); }}>
+        <button
+          className="classic-return"
+          onClick={() => {
+            chooseTheme(document.documentElement.dataset.themeChoice || "auto");
+            setClassic(false);
+          }}
+        >
           ← Voltar aos portais SolicitaFlow
         </button>
         <App />
@@ -247,7 +320,9 @@ export default function Portals() {
               disabled={busy}
               onClick={startLab}
             >
-              Explorar laboratório
+              {busy
+                ? "Preparando demonstração…"
+                : "Explorar demonstração gratuita"}
             </button>
           )}
           <span className="badge">
@@ -272,7 +347,19 @@ export default function Portals() {
       <main id="portal-content" className="sf-main" tabIndex={-1}>
         {error && (
           <div className="callout error" role="alert">
-            {error}
+            <div>
+              <p>{error}</p>
+              {retryAt && (
+                <p>
+                  Você poderá criar uma nova demonstração às{" "}
+                  <time dateTime={new Date(retryAt).toISOString()}>
+                    {new Date(retryAt).toLocaleTimeString("pt-BR")}
+                  </time>
+                  . Se houver uma sessão válida neste navegador, a entrada
+                  continuará disponível para retomá-la.
+                </p>
+              )}
+            </div>
             <button className="button secondary" onClick={() => setError("")}>
               Fechar mensagem
             </button>
@@ -295,6 +382,9 @@ export default function Portals() {
             }}
             busy={busy}
             clock={clock}
+            records={items}
+            selected={selected}
+            restart={restartGuide}
           />
         )}
         {!ready ? (
@@ -312,38 +402,63 @@ export default function Portals() {
                 Classificação assistida, destino validado por regras e
                 acompanhamento pelo departamento responsável.
               </p>
-              <div className="sf-steps">
-                01 Cadastro → 02 Classificação → 03 Encaminhamento → 04
-                Resolução
+              <div className="sf-hero-actions">
+                <button
+                  className="button primary"
+                  onClick={startLab}
+                  disabled={busy}
+                >
+                  {busy
+                    ? "Preparando demonstração…"
+                    : sessionExpired
+                      ? "Iniciar nova demonstração gratuita"
+                      : "Explorar demonstração gratuita"}
+                </button>
+                <a className="button secondary" href="#local-login">
+                  Tenho acesso aos portais
+                </a>
               </div>
-              <button
-                className="button secondary"
-                onClick={() => setPage(page === "learn" ? "portal" : "learn")}
-              >
-                Como funciona
-              </button>
+              <p className="field-help">
+                Sem senha · Empresa fictícia · Sem créditos de IA
+              </p>
+              <FirstSteps />
+              <a className="sf-journey-link" href="#como-funciona">
+                Conhecer a jornada ↓
+              </a>
             </div>
             {context === "lab" ? (
-              <section className="card sf-form">
-                <h2>Seu laboratório está disponível.</h2>
+              <section id="local-login" tabIndex={-1} className="card sf-form">
+                <h2>
+                  {sessionExpired
+                    ? "Sua sessão de demonstração encerrou."
+                    : "Demonstração gratuita"}
+                </h2>
                 <p>
-                  Inicie uma nova sessão fictícia sem senha ou retorne ao
-                  ambiente local.
+                  Por segurança, uma sessão expirada não recupera o laboratório
+                  anterior. Você pode iniciar outra demonstração independente,
+                  sujeita à cota de novas criações, ou acessar seus portais
+                  locais.
                 </p>
                 <button
                   className="button primary"
                   onClick={startLab}
                   disabled={busy}
                 >
-                  Iniciar laboratório
+                  Iniciar nova demonstração
                 </button>
               </section>
             ) : (
-              <form className="card sf-form" onSubmit={authenticate}>
-                <h2>Entrar no ambiente local</h2>
+              <form
+                id="local-login"
+                tabIndex={-1}
+                className="card sf-form"
+                onSubmit={authenticate}
+              >
+                <p className="eyebrow">PARA QUEM JÁ TEM UMA CONTA</p>
+                <h2>Acessar portais locais</h2>
                 <p>
-                  Use uma das contas fictícias provisionadas localmente. Cada
-                  perfil possui permissões próprias.
+                  Use a conta fornecida pelo responsável pelo ambiente. O acesso
+                  depende do seu perfil e das suas permissões.
                 </p>
                 <label>
                   Usuário
@@ -371,6 +486,22 @@ export default function Portals() {
                 <button className="button primary" disabled={busy}>
                   {busy ? "Entrando…" : "Entrar"}
                 </button>
+                <aside className="sf-login-help">
+                  <strong>Está conhecendo o produto?</strong>
+                  <p>
+                    Você não precisa de usuário ou senha. Explore a demonstração
+                    gratuita e alterne entre Colaborador, Departamento e Central
+                    em um ambiente fictício isolado.
+                  </p>
+                  <button
+                    type="button"
+                    className="button secondary"
+                    onClick={startLab}
+                    disabled={busy}
+                  >
+                    Explorar sem senha
+                  </button>
+                </aside>
               </form>
             )}
           </section>
@@ -856,6 +987,7 @@ export default function Portals() {
             )}
           </>
         )}
+        {ready && !who && <Landing onExplore={startLab} busy={busy} />}
         {page === "learn" && (
           <section className="card sf-learning">
             <ProcessEducation />

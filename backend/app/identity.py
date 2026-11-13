@@ -1,5 +1,5 @@
 """Opaque, hashed sessions. Laboratory capabilities cannot authenticate locally."""
-import hashlib, hmac, os, secrets
+import hashlib, hmac, os, secrets, math
 from datetime import datetime, timezone, timedelta
 from uuid import uuid4
 from fastapi import HTTPException, Request, Response
@@ -21,9 +21,9 @@ def context(request):
     if value not in ('local','lab'): raise HTTPException(400,'Contexto inválido')
     return value
 
-def rate_limit(conn,key,limit=30):
+def rate_limit(conn,key,limit=30,*,now=None):
     digest=hashlib.sha256(key.encode()).hexdigest()
-    bucket=int(datetime.now(timezone.utc).timestamp())//3600
+    bucket=int((now or datetime.now(timezone.utc)).timestamp())//3600
     count=conn.execute('''INSERT INTO sf_rate_windows(key,bucket) VALUES(%s,%s)
         ON CONFLICT(key,bucket) DO UPDATE SET count=sf_rate_windows.count+1 RETURNING count''',(digest,bucket)).fetchone()['count']
     # Commit failed-attempt counters too; callers use a separate transaction for authentication.
@@ -31,10 +31,17 @@ def rate_limit(conn,key,limit=30):
     return True
 
 def issue_session(conn,account,response,kind):
+    now=datetime.now(timezone.utc)
+    expiry=now+timedelta(hours=2 if kind=='lab' else 8)
+    if kind=='lab':
+        workspace=conn.execute('SELECT expires_at FROM sf_workspaces WHERE id=%s',(account['workspace_id'],)).fetchone()
+        if workspace['expires_at']:
+            expiry=min(expiry,workspace['expires_at'])
+        if expiry<=now:raise HTTPException(401,'Este laboratório expirou. Inicie uma nova demonstração.')
     token=secrets.token_urlsafe(32)
     conn.execute('INSERT INTO sf_sessions(token_hash,workspace_id,account_id,expires_at) VALUES(%s,%s,%s,%s)',
-        (hashlib.sha256(token.encode()).hexdigest(),account['workspace_id'],account['id'],datetime.now(timezone.utc)+timedelta(hours=2 if kind=='lab' else 8)))
-    response.set_cookie('sf_'+kind,token,httponly=True,samesite='strict',secure=False,max_age=7200 if kind=='lab' else 28800,path='/')
+        (hashlib.sha256(token.encode()).hexdigest(),account['workspace_id'],account['id'],expiry))
+    response.set_cookie('sf_'+kind,token,httponly=True,samesite='strict',secure=False,max_age=math.ceil((expiry-now).total_seconds()),path='/')
 
 def actor(request: Request):
     kind=context(request)

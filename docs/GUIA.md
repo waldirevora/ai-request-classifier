@@ -56,10 +56,10 @@ Não modificar a DeepSeek ou habilitar chamadas pagas para executar o laboratór
 
 ## Contas e laboratório
 
-O botão **Explorar laboratório** inicia um ambiente fictício independente. Trocar
+O botão **Explorar demonstração gratuita** retoma uma sessão válida ou inicia um ambiente fictício independente quando necessário. Trocar
 personagens não autentica usuários reais. O cabeçalho identifica o modo de simulação.
 Cada ambiente admite até 20 pedidos, expira em 24 horas e não usa API paga.
-Criar outro laboratório produz outro conjunto de dados; não elimina os anteriores.
+Recarregar, retomar ou **Recomeçar roteiro** preserva pedidos, relógio e workspace sem consumir cota de criação. Sessões expiradas não são recuperadas; uma nova entrada explícita cria outro ambiente, sujeita ao limite e ao Retry-After. Veja [V2.5](V2_5.md).
 
 Contas fictícias locais usam senhas geradas. Na instalação recuperada, o arquivo
 privado é `~/.local/share/ai-request-classifier/solicitaflow-v2/local-accounts.json`
