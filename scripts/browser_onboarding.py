@@ -113,7 +113,7 @@ def authenticated_portal(browser, accounts_path, evidence):
     # The legacy paid path must remain read-only throughout this browser regression.
     context.route('**/api/solicitacoes', lambda route: route.continue_() if route.request.method=='GET' else route.abort())
     page=context.new_page();page.goto(BASE)
-    page.get_by_text('Acesso técnico aos portais',exact=True).click()
+    page.get_by_role('button',name='Acesso técnico',exact=True).click()
     page.get_by_label('Usuário',exact=True).fill(account['username'])
     page.get_by_label('Senha',exact=True).fill(account['password'])
     page.get_by_role('button',name='Entrar',exact=True).click()

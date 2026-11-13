@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="240" viewBox="0 0 980 240">
+    <defs><linearGradient id="sfgrad" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#27D5B4"/><stop offset="0.54" stop-color="#0AAEBB"/><stop offset="1" stop-color="#236BD8"/></linearGradient></defs>
+    <g transform="translate(17,13) scale(.8)">
+    <path d="M182 56 C146 48 94 48 75 81 C47 129 108 132 148 146 C199 164 189 213 72 207" fill="none" stroke="url(#sfgrad)" stroke-width="49" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="182" cy="56" r="13" fill="#F7FEFF"/><circle cx="84" cy="115" r="13" fill="#F7FEFF"/><circle cx="72" cy="207" r="13" fill="#F7FEFF"/>
+    </g>
+    <text x="239" y="154" font-size="90" font-weight="750" font-family="Inter,Segoe UI,Arial,sans-serif" letter-spacing="-3"><tspan fill="#EAF6FF">Solicita</tspan><tspan fill="#17CEB1">Flow</tspan></text>
+    </svg>

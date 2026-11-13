@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 export const THEME_KEY = "arc-theme";
 export function useTheme() {
   const [mode, setMode] = useState(
-    () => document.documentElement.dataset.themeChoice || "auto",
+    () => document.documentElement.dataset.themeChoice || "dark",
   );
   useEffect(() => {
     const media = window.matchMedia("(prefers-color-scheme: dark)");
