@@ -57,16 +57,24 @@ async function requisicao(path, options = {}) {
     );
   return body;
 }
+let pendingSubmission = null;
 export const api = {
   configuracao: () => requisicao("/configuracao"),
   listar: () => requisicao("/solicitacoes"),
   pendentes: () => requisicao("/revisoes/pendentes"),
   concluidas: () => requisicao("/revisoes/concluidas"),
-  criar: (dados) =>
-    requisicao("/solicitacoes", {
+  criar: async (dados) => {
+    const body = JSON.stringify(dados);
+    if (pendingSubmission?.body !== body)
+      pendingSubmission = { body, key: crypto.randomUUID() };
+    const result = await requisicao("/solicitacoes", {
       method: "POST",
-      body: JSON.stringify(dados),
-    }),
+      headers: { "Idempotency-Key": pendingSubmission.key },
+      body,
+    });
+    pendingSubmission = null;
+    return result;
+  },
   revisar: (id, dados) =>
     requisicao(`/revisoes/${id}`, {
       method: "POST",

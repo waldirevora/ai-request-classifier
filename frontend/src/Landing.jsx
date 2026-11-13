@@ -1,139 +1,154 @@
 import React from "react";
-
 const steps = [
   [
-    "Solicite",
-    "O colaborador explica o que precisa, quem foi afetado e o que aconteceu.",
+    "O colaborador registra",
+    "Uma necessidade de RH, Financeiro ou TI ganha um pedido com contexto.",
   ],
   [
-    "A IA entende",
-    "A inteligência artificial sugere a classificação. Nesta demonstração, essa análise é simulada.",
+    "A IA analisa",
+    "A DeepSeek interpreta a descrição e sugere categoria, impacto, urgência e justificativa.",
   ],
   [
-    "O sistema encaminha",
-    "As regras verificam o destino dos casos claros. Situações ambíguas passam por revisão humana.",
+    "As regras validam",
+    "Python calcula a prioridade e verifica o destino. Dúvidas seguem para a Central de Exceções.",
   ],
   [
     "O departamento atende",
-    "O setor responsável recebe a solicitação, assume o atendimento e registra o andamento.",
+    "O responsável assume o pedido e mantém o andamento visível.",
   ],
   [
     "O prazo é acompanhado",
-    "O SLA é o prazo combinado para responder e resolver. O sistema acompanha esse prazo e gera alertas.",
+    "Regras de SLA identificam risco e atraso, registrando alertas internos.",
   ],
   [
     "A resolução fica registrada",
-    "O colaborador confere a resposta. Os gestores acompanham o histórico e os indicadores.",
+    "O colaborador recebe a resposta. Os gestores consultam histórico e indicadores.",
   ],
 ];
-const audience = [
-  [
-    "Colaboradores",
-    "Solicite e acompanhe sem depender de mensagens ou cobranças informais.",
-    "Um lugar para saber como seu pedido está.",
-  ],
-  [
-    "Departamentos",
-    "Organize demandas e mantenha os atendimentos visíveis.",
-    "Uma fila com destino, responsável e próximos passos.",
-  ],
-  [
-    "Gestores",
-    "Acompanhe produtividade, SLA, atrasos e qualidade do atendimento.",
-    "Histórico e indicadores para apoiar suas decisões.",
-  ],
-];
-const differences = [
-  ["Destino verificado", "IA e regras trabalham juntas no encaminhamento."],
-  [
-    "Pessoas nas exceções",
-    "Revisão humana quando há dúvida ou falta de informação.",
-  ],
-  [
-    "Atendimento visível",
-    "Cada departamento registra seu andamento e a resolução.",
-  ],
-  [
-    "Prazos acompanhados",
-    "Alertas de risco, cobrança e escalonamento internos.",
-  ],
-  ["Histórico e relatórios", "Decisões e etapas registradas para consulta."],
-  [
-    "Transparência para quem pediu",
-    "O colaborador acompanha o destino e a resposta.",
-  ],
-];
-const questions = [
-  [
-    "A inteligência artificial resolve as solicitações?",
-    "Não. A IA sugere a classificação; as regras validam o encaminhamento. O departamento responsável atende e confirma a resolução.",
-  ],
-  [
-    "Quando a revisão humana é necessária?",
-    "Quando faltam informações, há mais de um assunto, o destino não é válido ou a classificação falha. A central esclarece o caso antes do encaminhamento.",
-  ],
-  [
-    "Quem acompanha o prazo?",
-    "O sistema verifica os prazos automaticamente. O departamento acompanha seu atendimento e a central monitora os indicadores de SLA.",
-  ],
-  [
-    "O que acontece quando um departamento atrasa?",
-    "São registrados alertas, cobranças e escalonamento internos conforme a política configurada. Os prazos são fictícios no laboratório e não há envio de mensagens a contatos reais.",
-  ],
-  [
-    "O laboratório utiliza dados reais?",
-    "Não. A empresa, os personagens e os exemplos são fictícios. Use apenas dados inventados. Seu laboratório é separado do de outros visitantes.",
-  ],
-  [
-    "A demonstração consome créditos de IA?",
-    "Não. O laboratório usa uma simulação determinística, identificada na tela, e não envia solicitações à DeepSeek.",
-  ],
-];
-
 export function FirstSteps() {
   return (
     <ol className="sf-first-steps" aria-label="Seus primeiros passos">
       {[
-        "Escolha como explorar",
-        "Crie um pedido fictício",
-        "Veja o encaminhamento",
-        "Simule atendimento e SLA",
-        "Confira resposta e relatório",
-      ].map((text, index) => (
+        "Inicie sem login",
+        "Descreva um pedido fictício",
+        "Acompanhe a análise real da IA",
+        "Atue como departamento",
+        "Confira resolução e relatório",
+      ].map((text, i) => (
         <li key={text}>
-          <span aria-hidden="true">{index + 1}</span>
+          <span aria-hidden="true">{i + 1}</span>
           {text}
         </li>
       ))}
     </ol>
   );
 }
-
-export default function Landing({ onExplore, busy }) {
+export function HeroPreview() {
+  return (
+    <aside
+      className="sf-business-preview"
+      aria-label="Exemplo de processo empresarial"
+    >
+      <p className="eyebrow">UMA NECESSIDADE. UM CAMINHO VISÍVEL.</p>
+      <div className="sf-example-message">
+        <span>Colaborador · exemplo fictício</span>
+        <strong>“Precisamos verificar uma nota fiscal.”</strong>
+      </div>
+      <div className="sf-preview-connector" aria-hidden="true">
+        ↓
+      </div>
+      <div className="sf-preview-analysis">
+        <strong>IA interpreta. Regras verificam.</strong>
+        <span>Assunto · prioridade · destino</span>
+      </div>
+      <div className="sf-preview-connector" aria-hidden="true">
+        ↓
+      </div>
+      <div className="sf-preview-departments">
+        <span>Pessoas</span>
+        <strong>Financeiro</strong>
+        <span>TI</span>
+      </div>
+      <div className="sf-preview-connector" aria-hidden="true">
+        ↓
+      </div>
+      <div className="sf-example-message">
+        <strong>Atendimento acompanhado até a resposta</strong>
+        <span>Responsável · prazo · histórico</span>
+      </div>
+      <p className="field-help">
+        Ilustração da jornada. A análise real acontece quando você envia um
+        pedido na demonstração.
+      </p>
+    </aside>
+  );
+}
+export default function Landing({ onExplore, busy, contactUrl }) {
   return (
     <div className="sf-landing">
-      <section className="sf-product-section" aria-labelledby="what-is-flow">
+      <section
+        className="sf-product-section sf-section-stack"
+        aria-labelledby="business-problem"
+      >
         <div className="sf-section-intro">
-          <p className="eyebrow">UM PEDIDO. UM CAMINHO CLARO.</p>
-          <h2 id="what-is-flow">O que é o SolicitaFlow?</h2>
+          <p className="eyebrow">QUANDO O PEDIDO SE PERDE, O PROCESSO PARA</p>
+          <h2 id="business-problem">Reconhece alguma dessas situações?</h2>
           <p>
-            SolicitaFlow é uma plataforma inteligente que ajuda empresas a
-            organizar solicitações internas, encaminhar cada pedido ao
-            departamento responsável e acompanhar sua resolução.
-          </p>
-          <p>
-            Do primeiro relato à resposta final, cada pessoa encontra o que
-            precisa para seguir em frente.
+            Um pedido chega por mensagem, outro fica no e-mail e a planilha nem
+            sempre conta a história toda.
           </p>
         </div>
-        <div className="sf-flow-preview" aria-label="Exemplo de jornada">
-          <span>Pedido do colaborador</span>
-          <span aria-hidden="true">↓</span>
-          <strong>Classificação e destino verificado</strong>
-          <span aria-hidden="true">↓</span>
-          <span>Atendimento com prazo e responsável</span>
-          <span aria-hidden="true">↓</span>
-          <strong>Resposta registrada para quem solicitou</strong>
+        <div className="sf-journey-grid">
+          {[
+            [
+              "RH: “Como está meu pedido?”",
+              "Solicitações de férias e benefícios ficam dispersas, sem uma visão clara do andamento.",
+            ],
+            [
+              "Financeiro: “Quem deve atender?”",
+              "Notas fiscais e reembolsos circulam entre pessoas, com encaminhamentos manuais e retrabalho.",
+            ],
+            [
+              "TI: “Era para quando?”",
+              "Demandas esquecidas, prioridades pouco claras e gestores sem indicadores consolidados.",
+            ],
+          ].map(([title, text]) => (
+            <article className="card sf-problem-card" key={title}>
+              <h3>{title}</h3>
+              <p>{text}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+      <section
+        className="sf-product-section sf-section-stack"
+        aria-labelledby="business-change"
+      >
+        <div className="sf-section-intro">
+          <p className="eyebrow">DO FRAGMENTADO AO ACOMPANHÁVEL</p>
+          <h2 id="business-change">
+            Veja o que muda no caminho de uma solicitação.
+          </h2>
+        </div>
+        <div className="sf-transformation">
+          <article>
+            <h3>Um processo fragmentado</h3>
+            <ul>
+              <li>Mensagens em canais diferentes</li>
+              <li>Destino escolhido a cada novo pedido</li>
+              <li>Cobranças informais para saber o andamento</li>
+              <li>Histórico difícil de reunir</li>
+            </ul>
+          </article>
+          <article>
+            <h3>Um fluxo organizado</h3>
+            <ul>
+              <li>Pedido registrado em um lugar</li>
+              <li>IA e regras apoiando o encaminhamento</li>
+              <li>Responsável, prazo e andamento visíveis</li>
+              <li>Resposta e indicadores disponíveis para consulta</li>
+            </ul>
+          </article>
         </div>
       </section>
       <section
@@ -142,97 +157,172 @@ export default function Landing({ onExplore, busy }) {
         aria-labelledby="flow-journey"
       >
         <div className="sf-section-intro">
-          <p className="eyebrow">DO PEDIDO À RESOLUÇÃO</p>
-          <h2 id="flow-journey">Como funciona?</h2>
-          <p>
-            Seis etapas conectam quem precisa de ajuda a quem pode resolver.
-          </p>
+          <p className="eyebrow">INTELIGÊNCIA COM CRITÉRIO</p>
+          <h2 id="flow-journey">Como funciona na prática?</h2>
+          <p>A IA interpreta. As regras validam. O departamento resolve.</p>
         </div>
         <ol className="sf-journey-grid">
-          {steps.map(([title, text], index) => (
+          {steps.map(([title, text], i) => (
             <li className="card" key={title}>
               <span className="sf-step-number" aria-hidden="true">
-                0{index + 1}
+                0{i + 1}
               </span>
               <h3>{title}</h3>
               <p>{text}</p>
             </li>
           ))}
         </ol>
+        <p className="field-help">
+          Na demonstração, a análise DeepSeek é real. Empresa, departamentos,
+          atendimento e passagem do tempo são fictícios. Se uma chamada for
+          impedida por limite ou falhar, isso será informado e o pedido seguirá
+          para exceção sem uma resposta inventada.
+        </p>
       </section>
       <section
         className="sf-product-section sf-section-stack"
         aria-labelledby="flow-audience"
       >
         <div className="sf-section-intro">
-          <p className="eyebrow">CADA PESSOA TEM SEU ESPAÇO</p>
-          <h2 id="flow-audience">Para quem foi criado?</h2>
+          <p className="eyebrow">
+            VISIBILIDADE PARA QUEM PEDE E PARA QUEM ATENDE
+          </p>
+          <h2 id="flow-audience">Cada pessoa encontra seu próximo passo.</h2>
         </div>
         <div className="sf-audience-grid">
-          {audience.map(([title, text, benefit]) => (
+          {[
+            [
+              "Colaboradores",
+              "Acompanhe seus pedidos com transparência, do registro à resposta.",
+            ],
+            [
+              "Departamentos",
+              "Receba demandas organizadas, identifique prioridades e registre o atendimento.",
+            ],
+            [
+              "Gestores",
+              "Acompanhe o fluxo, identifique gargalos e consulte prazos e indicadores.",
+            ],
+          ].map(([title, text]) => (
             <article className="card" key={title}>
               <h3>{title}</h3>
               <p>{text}</p>
-              <p className="sf-audience-benefit">{benefit}</p>
             </article>
           ))}
         </div>
       </section>
-      <section
-        className="sf-product-section sf-section-stack"
-        aria-labelledby="flow-difference"
-      >
-        <div className="sf-section-intro">
-          <p className="eyebrow">INTELIGÊNCIA COM CRITÉRIO</p>
-          <h2 id="flow-difference">O diferencial está no acompanhamento.</h2>
+      <section className="sf-product-section sf-section-stack">
+        <details className="sf-tech-explainer">
+          <summary>Por trás da solução</summary>
           <p>
-            Automatizar a triagem é o começo. Tornar o atendimento compreensível
-            é parte do caminho.
+            Uma demonstração prática de engenharia de IA, automação e
+            desenvolvimento de soluções corporativas.
           </p>
-        </div>
-        <div className="sf-difference-grid">
-          {differences.map(([title, text]) => (
-            <article key={title}>
-              <span className="sf-check" aria-hidden="true">
-                ✓
-              </span>
-              <div>
-                <h3>{title}</h3>
-                <p>{text}</p>
-              </div>
-            </article>
-          ))}
-        </div>
+          <div className="sf-difference-grid">
+            {[
+              [
+                "DeepSeek",
+                "Interpreta o pedido e devolve uma sugestão estruturada.",
+              ],
+              [
+                "Python e FastAPI",
+                "Aplicam regras determinísticas e coordenam cada etapa pela API.",
+              ],
+              [
+                "PostgreSQL",
+                "Preserva pedidos, decisões, reservas de uso e histórico.",
+              ],
+              [
+                "React",
+                "Apresenta a jornada de forma responsiva, com temas e feedback.",
+              ],
+              [
+                "Automação de SLA",
+                "Acompanha prazos e registra eventos sem gastar tokens em verificações periódicas.",
+              ],
+              [
+                "Segurança e testes",
+                "Sessões isoladas, autorização, limites de uso e testes com mocks.",
+              ],
+            ].map(([title, text]) => (
+              <article key={title}>
+                <div>
+                  <h3>{title}</h3>
+                  <p>{text}</p>
+                </div>
+              </article>
+            ))}
+          </div>
+        </details>
       </section>
-      <section className="sf-demo-cta" aria-labelledby="flow-try">
-        <p className="eyebrow">EXPERIMENTE NA PRÁTICA</p>
-        <h2 id="flow-try">Veja o SolicitaFlow funcionando do início ao fim.</h2>
+      <section className="sf-demo-cta" aria-labelledby="business-close">
+        <p className="eyebrow">UMA SOLUÇÃO QUE PODE SER PERSONALIZADA</p>
+        <h2 id="business-close">
+          Imagine esse processo adaptado à sua empresa.
+        </h2>
         <p>
-          Entre em uma empresa fictícia, troque de personagem, simule a passagem
-          do tempo e acompanhe a resolução de um pedido.
+          Cada empresa possui departamentos, regras e fluxos próprios. O
+          SolicitaFlow demonstra como inteligência artificial e automação podem
+          ser adaptadas para organizar processos internos e acompanhar
+          resultados.
         </p>
-        <ul className="sf-demo-promises">
-          <li>Sem senha</li>
-          <li>Sem dados reais</li>
-          <li>Sem consumo de créditos de IA</li>
-        </ul>
-        <button className="button primary" onClick={onExplore} disabled={busy}>
-          {busy ? "Preparando demonstração…" : "Explorar laboratório"}
-        </button>
-        <p className="field-help">
-          Se sua sessão estiver válida, você continua de onde parou.
+        <p>
+          Este é um portfólio demonstrativo de uma implementação personalizada,
+          sem contratação de um serviço por assinatura.
         </p>
+        <div className="sf-hero-actions sf-centered-actions">
+          <button
+            className="button primary"
+            disabled={busy}
+            onClick={onExplore}
+          >
+            {busy ? "Preparando demonstração…" : "Iniciar demonstração"}
+          </button>
+          {contactUrl && (
+            <a
+              className="button secondary"
+              href={contactUrl}
+              rel="noopener noreferrer"
+            >
+              Conversar sobre uma implementação
+            </a>
+          )}
+        </div>
       </section>
       <section
         className="sf-product-section sf-section-stack"
         aria-labelledby="flow-faq"
       >
         <div className="sf-section-intro">
-          <p className="eyebrow">PARA EXPLORAR COM TRANQUILIDADE</p>
-          <h2 id="flow-faq">Perguntas frequentes</h2>
+          <h2 id="flow-faq">Antes de experimentar</h2>
         </div>
         <div className="sf-faq">
-          {questions.map(([question, answer]) => (
+          {[
+            [
+              "A inteligência artificial resolve as solicitações?",
+              "Não. Ela sugere a classificação. Regras validam o encaminhamento e o departamento fictício registra o atendimento e a resolução.",
+            ],
+            [
+              "Quando a revisão humana é necessária?",
+              "Quando há ambiguidade, dados insuficientes, destino não confiável ou falha na análise. O pedido permanece salvo na Central de Exceções.",
+            ],
+            [
+              "Preciso informar dados pessoais?",
+              "Não. A sessão é anônima e isolada. Use apenas informações inventadas, sem nomes, documentos ou dados da sua empresa.",
+            ],
+            [
+              "O que é real e o que é demonstrativo?",
+              "A análise DeepSeek é real quando autorizada pelos limites. Empresa, personagens, atendimento, relógio e SLA são demonstrativos. Não há resposta simulada apresentada como IA real.",
+            ],
+            [
+              "E se a IA estiver indisponível ou a cota terminar?",
+              "O pedido aceito continua registrado. A tela informa que a análise não ocorreu ou não foi concluída e o caso segue para exceção.",
+            ],
+            [
+              "Isso pode funcionar com os processos da minha empresa?",
+              "A demonstração ilustra uma base que pode ser personalizada. Departamentos, integrações, regras, identidade e políticas exigem levantamento e implementação específicos.",
+            ],
+          ].map(([question, answer]) => (
             <details key={question}>
               <summary>{question}</summary>
               <p>{answer}</p>

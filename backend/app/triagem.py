@@ -19,13 +19,13 @@ def ia_ativa() -> bool:
     return os.getenv("AI_ENABLED", "false").strip().lower() == "true"
 
 
-def processar_solicitacao(registro: dict) -> dict:
+def processar_solicitacao(registro: dict, classifier=None) -> dict:
     """Atualiza sugestão em nova transação. Não apaga o registro em falhas da IA."""
-    if not ia_ativa():
+    if classifier is None and not ia_ativa():
         return registro  # mantém status pendente_classificacao
 
     try:
-        resultado = classificar_solicitacao(registro["titulo"], registro["descricao"])
+        resultado = (classifier or classificar_solicitacao)(registro["titulo"], registro["descricao"])
         with conectar() as conn:
             registro_atualizado = conn.execute(
                 f"""UPDATE solicitacoes SET

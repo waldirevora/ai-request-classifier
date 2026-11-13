@@ -14,6 +14,14 @@ from seed_local import seed
 def portal(monkeypatch):
     monkeypatch.setenv('PGDATABASE','ai_request_classifier_test')
     monkeypatch.setenv('SF_SECURE_LEGACY','true')
+    monkeypatch.setenv('AI_ENABLED','true')
+    monkeypatch.setenv('SF_REAL_AI_ENABLED','true')
+    monkeypatch.setenv('AI_MODEL','deepseek-flash')
+    for key,value in {'SF_AI_DAILY_CALLS':'1000','SF_AI_WORKSPACE_CALLS':'1000','SF_AI_HOURLY_IP_CALLS':'1000','SF_AI_DAILY_TOKENS':'10000000','SF_AI_DAILY_USD':'10'}.items():monkeypatch.setenv(key,value)
+    from app import ia
+    from app.routing import simulate
+    from dataclasses import replace
+    monkeypatch.setattr(ia,'classificar_solicitacao',lambda title,description:replace(simulate(title,description),modelo='mock-deepseek'))
     with conectar() as conn:
         clean_test_database(conn)
         workspace,accounts=seed(conn)
@@ -42,7 +50,7 @@ def test_authentication_and_idempotency(portal):
     assert first.json()['state']=='encaminhada'
     assert len(client.get('/v2/cases').json())==1
     assert client.post('/v2/departments',json={'name':'Inválido'}).status_code==403
-    assert create(client,mode='deepseek').status_code==403
+    assert create(client,mode='deepseek').status_code==201
 
 def test_resource_authorization(portal):
     client,workspace,accounts=portal
@@ -81,7 +89,7 @@ def test_origin_and_logout(portal):
     assert client.get('/v2/session').status_code==401
 
 def test_provider_failure_keeps_request_and_daily_budget(portal,monkeypatch):
-    from app import portals
+    from app import ia
     from app.ia import ErroClassificacao
     client,_,_=portal
     monkeypatch.setenv('SF_REAL_AI_ENABLED','true')
@@ -90,16 +98,19 @@ def test_provider_failure_keeps_request_and_daily_budget(portal,monkeypatch):
     def fail(*args):
         calls.append(args)
         raise ErroClassificacao('http_429')
-    monkeypatch.setattr(portals,'classificar_solicitacao',fail)
+    monkeypatch.setattr(ia,'classificar_solicitacao',fail)
+    monkeypatch.setenv('SF_AI_WORKSPACE_CALLS','2')
     login(client,'colaborador')
     for _ in range(2):
         response=create(client,mode='deepseek')
         assert response.status_code==201,response.text
         assert response.json()['state']=='excecao'
         assert response.json()['request']['titulo']=='Servidor parado'
-    assert create(client,mode='deepseek').status_code==429
+    blocked=create(client,mode='deepseek')
+    assert blocked.status_code==201
+    assert blocked.json()['analysis_code']=='cota_ambiente'
     assert len(calls)==2
-    assert len(client.get('/v2/cases').json())==2
+    assert len(client.get('/v2/cases').json())==3
 
 def test_map_rejects_unknown_or_foreign_destination(portal):
     client,_,_=portal

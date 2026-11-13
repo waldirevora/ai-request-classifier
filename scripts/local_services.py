@@ -69,7 +69,7 @@ def start():
     RUNTIME.mkdir(mode=0o700,parents=True,exist_ok=True)
     frontend={k:v for k,v in env.items() if not k.startswith(('PG','AI_','DEEPSEEK','SF_')) and k!='DATABASE_URL'}
     specs={
-        'backend':([str(PYTHON),'-m','uvicorn','app.main:app','--host','127.0.0.1','--port','8000'],ROOT/'backend',env),
+        'backend':([str(PYTHON),'-m','uvicorn','app.main:app','--host','127.0.0.1','--port','8000','--no-proxy-headers'],ROOT/'backend',env),
         'frontend':([NODE,str(ROOT/'frontend/node_modules/vite/bin/vite.js'),'--host','127.0.0.1','--port','5173'],ROOT/'frontend',frontend),
         'sla':([str(PYTHON),str(ROOT/'scripts/check_sla.py'),'--interval','60'],ROOT,dict(env,AI_ENABLED='false',SF_REAL_AI_ENABLED='false')),
     }

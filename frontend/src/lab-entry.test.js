@@ -134,7 +134,7 @@ test("connection failure gives a Portuguese explanation and performs no retry", 
 });
 
 test("the next step guides each fictional role and exceptional requests", () => {
-  assert.match(nextLabStep({ role: "colaborador" }, []), /Cenário automático/);
+  assert.match(nextLabStep({ role: "colaborador" }, []), /Exemplo de TI/);
   assert.match(
     nextLabStep({ role: "colaborador" }, [{ state: "excecao" }]),
     /Central/,

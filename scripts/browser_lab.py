@@ -3,8 +3,8 @@ Usage: browser-venv/bin/python scripts/browser_lab.py --output /tmp/solicitaflow
 """
 from pathlib import Path
 from uuid import uuid4
-import argparse,json,re
-from browser_onboarding import initial_entry,finish_entry_checks,authenticated_portal,native_zoom,fit_and_readable
+import argparse,json,re,os
+from browser_onboarding import BASE,initial_entry,finish_entry_checks,authenticated_portal,native_zoom,fit_and_readable
 from playwright.sync_api import sync_playwright,expect
 
 def run(output,axe,channel=None,accounts=None):
@@ -31,16 +31,17 @@ def run(output,axe,channel=None,accounts=None):
         def open_case(title):
             page.get_by_role('button',name=title,exact=False).click()
             expect(page.get_by_role('heading',name=title,exact=True)).to_be_visible()
-        page.goto('http://127.0.0.1:5173/')
+        page.goto(BASE+'/')
+        assert page.request.get(BASE+'/api/v2/presentation').json()['test_mode'], 'Automated browser regression requires an isolated mock backend; paid calls are forbidden'
         initial_entry(page,context,shot,accessibility,evidence,creation_posts)
         expect(page.get_by_role('heading',name='Portal do Colaborador')).to_be_visible()
         expect(page.get_by_label('Personagem fictício',exact=True)).to_be_enabled()
-        page.get_by_role('button',name='Cenário automático',exact=True).click()
+        page.get_by_role('button',name='Exemplo de TI',exact=True).click()
         page.get_by_role('button',name='Enviar solicitação',exact=True).click()
         title='Servidor indisponível para a equipe'
         expect(page.get_by_role('heading',name=title,exact=True)).to_be_visible()
         expect(page.get_by_text('Encaminhamento automático · destino validado pelas regras')).to_be_visible()
-        rows=page.request.get('http://127.0.0.1:5173/api/v2/cases',headers={'X-SolicitaFlow-Context':'lab'}).json()
+        rows=page.request.get(BASE+'/api/v2/cases',headers={'X-SolicitaFlow-Context':'lab'}).json()
         case_id=rows[0]['id']
         evidence['steps']+=['fictional collaborator','create persisted request','automatic validated routing']
         page.get_by_label('Tema da interface').select_option('light');shot('lab-desktop-light');accessibility('desktop-light')
@@ -84,7 +85,7 @@ def run(output,axe,channel=None,accounts=None):
         page.get_by_role('button',name='SLA e relatórios',exact=True).click()
         expect(page.get_by_role('table')).to_be_visible();shot('lab-central-reports-desktop')
         evidence['steps']+=['collaborator reads response','central reports and history']
-        switch('colaborador');page.get_by_role('button',name='Cenário ambíguo',exact=True).click()
+        switch('colaborador');page.get_by_role('button',name='Exemplo com dois assuntos',exact=True).click()
         page.get_by_role('button',name='Enviar solicitação',exact=True).click()
         ambiguous='Dúvida entre tecnologia e financeiro'
         expect(page.get_by_role('heading',name=ambiguous)).to_be_visible()
@@ -98,22 +99,52 @@ def run(output,axe,channel=None,accounts=None):
         expect(page.get_by_role('heading',name='Revisão da exceção')).to_have_count(0)
         expect(page.get_by_text('Revisão humana registrada',exact=True)).to_be_visible();shot('lab-central-exception-reviewed')
         evidence['steps']+=['ambiguous request','human exception review','original suggestion preserved']
-        visitor=browser.new_context();other=visitor.new_page();other.goto('http://127.0.0.1:5173/')
-        other.locator('.sf-welcome').get_by_role('button',name='Explorar demonstração gratuita',exact=True).click()
+        visitor=browser.new_context();other=visitor.new_page();other.goto(BASE+'/')
+        other.locator('.sf-welcome').get_by_role('button',name='Experimentar o SolicitaFlow',exact=True).click()
         expect(other.get_by_role('heading',name='Portal do Colaborador')).to_be_visible()
-        assert other.request.get('http://127.0.0.1:5173/api/v2/cases/'+case_id,headers={'X-SolicitaFlow-Context':'lab'}).status==404
-        assert other.request.get('http://127.0.0.1:5173/api/v2/cases',headers={'X-SolicitaFlow-Context':'local'}).status==401
-        response=other.request.post('http://127.0.0.1:5173/api/v2/cases',headers={'X-SolicitaFlow-Context':'lab'},data={'titulo':'Teste fictício','descricao':'Uma descrição inteiramente fictícia sem dados pessoais.','mode':'deepseek','client_key':str(uuid4())})
-        assert response.status==403
-        evidence['steps']+=['second visitor isolation','local/lab separation','paid API denied']
+        assert other.request.get(BASE+'/api/v2/cases/'+case_id,headers={'X-SolicitaFlow-Context':'lab'}).status==404
+        assert other.request.get(BASE+'/api/v2/cases',headers={'X-SolicitaFlow-Context':'local'}).status==401
+        response=other.request.post(BASE+'/api/v2/cases',headers={'X-SolicitaFlow-Context':'lab'},data={'titulo':'Teste fictício','descricao':'Uma descrição inteiramente fictícia sem dados pessoais.','mode':'simulacao','client_key':str(uuid4())})
+        assert response.status==422
+        evidence['steps']+=['second visitor isolation','local/lab separation','simulation rejected']
+        # Provider failure is a QA transport fixture, never a real paid request.
+        other.get_by_role('button',name='Nova solicitação',exact=True).click()
+        other.get_by_label('Título',exact=True).fill('QA falha de API')
+        other.get_by_label('Descrição',exact=True).fill('A equipe fictícia relata um servidor parado e precisa de atendimento.')
+        other.get_by_role('button',name='Enviar solicitação',exact=True).click()
+        expect(other.get_by_role('heading',name='Não foi possível concluir a análise.',exact=True)).to_be_visible()
+        other.screenshot(path=str(output/'qa-provider-unavailable.png'),full_page=True)
+        evidence['screenshots'].append('qa-provider-unavailable.png')
+
         page.get_by_role('button',name='Como funciona',exact=True).click()
         expect(page.get_by_role('heading',name='Automação com regras. Pessoas nas exceções.')).to_be_visible()
         page.get_by_label('Impacto educativo',exact=False).select_option('empresa')
         page.get_by_label('Urgência educativa',exact=False).select_option('media')
         expect(page.locator('output')).to_contain_text('alta')
+
+        switch('colaborador')
+        page.get_by_role('button',name='Nova solicitação',exact=True).click()
+        page.get_by_label('Título',exact=True).fill('Pedido fictício após a cota')
+        page.get_by_label('Descrição',exact=True).fill('Uma equipe fictícia precisa verificar um servidor parado neste expediente.')
+        page.get_by_role('button',name='Enviar solicitação',exact=True).click()
+        expect(page.get_by_role('heading',name='Análise não realizada.',exact=True)).to_be_visible()
+        expect(page.get_by_text('Este ambiente atingiu sua cota de análises.',exact=True)).to_be_visible()
+        page.screenshot(path=str(output/'qa-budget-blocked.png'),full_page=True)
+        evidence['screenshots'].append('qa-budget-blocked.png')
+        evidence['ai_failure_and_budget_ui']='passed with mocks; no fabricated suggestions'
         finish_entry_checks(page,browser,context,output,evidence,creation_posts)
         authenticated_portal(browser,accounts,evidence)
         native_zoom(playwright,channel,output,evidence,context.cookies(),axe)
+        # A forwarded-IP header must not mint fresh creation quotas on the local server.
+        rejected=False
+        for index in range(11):
+            attacker=playwright.request.new_context()
+            answer=attacker.post(BASE+'/api/v2/lab/start',headers={'X-SolicitaFlow-Context':'lab','X-Forwarded-For':f'203.0.113.{index+1}'})
+            attacker.dispose()
+            if answer.status==429:
+                rejected=True;break
+        assert rejected,'Forwarded headers must not bypass the network creation limit'
+        evidence['forwarded_ip_spoofing']='blocked by peer-IP limits'
         assert not errors,errors
         evidence['lab_creation_posts_in_primary_browser']=len(creation_posts)
         evidence.update(passed=True,widths=[1440,768,390],themes=['light','dark','auto-live'],js_errors=errors,paid_calls=0)

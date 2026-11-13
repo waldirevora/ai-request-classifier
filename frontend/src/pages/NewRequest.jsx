@@ -99,6 +99,9 @@ export default function NewRequest({
               <p>
                 Seus dados foram salvos. {STATUSES[created.status]?.description}
               </p>
+              {created.analysis_notice && (
+                <p className="callout warning">{created.analysis_notice}</p>
+              )}
               <StatusBadge status={created.status} />
               <div className="success-actions">
                 <button

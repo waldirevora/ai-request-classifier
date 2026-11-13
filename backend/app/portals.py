@@ -2,12 +2,12 @@
 from datetime import datetime,timezone
 import os,hashlib
 from uuid import UUID,uuid4
-from fastapi import APIRouter,Depends,HTTPException,Request,Response
+from fastapi import APIRouter,Depends,HTTPException,Request,Response,BackgroundTasks
 from pydantic import BaseModel,Field,ConfigDict
 from app.database import conectar
 from app.identity import actor,require,issue_session,password_matches,public_actor,rate_limit,visible_case,context
-from app.routing import simulate,finalize,event
-from app.ia import classificar_solicitacao,ErroClassificacao
+from app.routing import event
+from app.ai_control import analyze,fingerprint
 from app.schemas import SolicitacaoEntrada
 from app.classificacao import Categoria,Impacto,Urgencia,calcular_prioridade
 from psycopg.types.json import Jsonb
@@ -41,37 +41,31 @@ def logout(request:Request,response:Response,who=Depends(actor)):
 
 class CreateCase(SolicitacaoEntrada):
     client_key:UUID
-    mode:str=Field(default='simulacao',pattern='^(simulacao|deepseek)$')
+    mode:str=Field(default='deepseek',pattern='^deepseek$')
 
 @router.post('/cases',status_code=201)
-def create_case(data:CreateCase,who=Depends(actor)):
+def create_case(data:CreateCase,request:Request, response:Response,background_tasks:BackgroundTasks,who=Depends(actor)):
     require(who,'colaborador')
-    if data.mode=='deepseek' and (who['kind']!='local' or os.getenv('SF_REAL_AI_ENABLED','false').strip().lower()!='true' or os.getenv('AI_ENABLED','false').strip().lower()!='true' or not os.getenv('DEEPSEEK_API_KEY','').strip()):
-        raise HTTPException(403,'IA real indisponível neste ambiente; utilize simulação')
+    digest=fingerprint(data.titulo,data.descricao)
     with conectar() as conn:
-        # Same idempotency key serializes concurrent submissions, including the paid budget reservation.
         conn.execute('SELECT pg_advisory_xact_lock(hashtextextended(%s,0))',(str(who['workspace_id'])+str(data.client_key),))
-        old=conn.execute('SELECT id,requester_id FROM sf_cases WHERE workspace_id=%s AND client_key=%s',(who['workspace_id'],data.client_key)).fetchone()
+        old=conn.execute('SELECT id,requester_id,submission_hash FROM sf_cases WHERE workspace_id=%s AND client_key=%s',(who['workspace_id'],data.client_key)).fetchone()
         if old:
-            if old['requester_id']!=who['id']:raise HTTPException(409,'Identificador já utilizado')
+            if old['requester_id']!=who['id'] or old['submission_hash']!=digest:raise HTTPException(409,'Identificador já utilizado para outro envio')
             return detail(old['id'],who)
-        # Serialize the per-workspace laboratory cap, even for distinct idempotency keys.
         if who['kind']=='lab':conn.execute('SELECT id FROM sf_workspaces WHERE id=%s FOR UPDATE',(who['workspace_id'],))
         if who['kind']=='lab' and conn.execute('SELECT count(*) n FROM sf_cases WHERE workspace_id=%s',(who['workspace_id'],)).fetchone()['n']>=20:raise HTTPException(429,'Limite de 20 solicitações por laboratório')
-        if data.mode=='deepseek':
-            budget=conn.execute('''INSERT INTO sf_ai_budgets(workspace_id,day,used) VALUES(%s,current_date,1)
-                ON CONFLICT(workspace_id,day) DO UPDATE SET used=sf_ai_budgets.used+1 WHERE sf_ai_budgets.used<2 RETURNING used''',(who['workspace_id'],)).fetchone()
-            if not budget:raise HTTPException(429,'Cota diária de duas classificações atingida')
         from app.workflow import now_for
         created_at=now_for(conn,who['workspace_id'])
         rid=conn.execute('INSERT INTO solicitacoes(titulo,descricao,criado_em) VALUES(%s,%s,%s) RETURNING id',(data.titulo,data.descricao,created_at)).fetchone()['id']
-        case=conn.execute('''INSERT INTO sf_cases(id,workspace_id,request_id,client_key,source,requester_id,created_at)
-            VALUES(%s,%s,%s,%s,%s,%s,%s) RETURNING *''',(uuid4(),who['workspace_id'],rid,data.client_key,data.mode,who['id'],created_at)).fetchone()
-        event(conn,case,'cadastrada',{'source':data.mode},who['id'])
-    # The original request is committed before any external operation.
-    try:result=simulate(data.titulo,data.descricao) if data.mode=='simulacao' else classificar_solicitacao(data.titulo,data.descricao)
-    except ErroClassificacao:result=None
-    with conectar() as conn:finalize(conn,case['id'],result)
+        case=conn.execute('''INSERT INTO sf_cases(id,workspace_id,request_id,client_key,source,requester_id,created_at,submission_hash,analysis_status)
+            VALUES(%s,%s,%s,%s,'deepseek',%s,%s,%s,'queued') RETURNING *''',(uuid4(),who['workspace_id'],rid,data.client_key,who['id'],created_at,digest)).fetchone()
+        event(conn,case,'cadastrada',{'source':'deepseek','message':'Recebemos sua solicitação. O pedido está salvo antes da análise.'},who['id'])
+    if request.headers.get('Prefer')=='respond-async':
+        response.status_code=202
+        background_tasks.add_task(analyze,case['id'],request.client.host)
+    else:
+        analyze(case['id'],request.client.host)
     return detail(case['id'],who)
 
 @router.get('/cases')

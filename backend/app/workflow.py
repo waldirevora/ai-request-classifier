@@ -48,6 +48,7 @@ def evaluate(conn,workspace):
             started=conn.execute('SELECT min(created_at) AS started FROM sf_events WHERE case_id=%s',(case['id'],)).fetchone()['started'] or case['created_at']
             if datetime.now(timezone.utc)-started>timedelta(minutes=5):
                 from app.routing import finalize
+                conn.execute("UPDATE sf_cases SET analysis_status='failed',analysis_code='processamento_interrompido',analysis_finished_at=now() WHERE id=%s AND analysis_status IN ('queued','running')",(case['id'],))
                 finalize(conn,case['id'],None)
                 continue
         apply_policy(conn,case)

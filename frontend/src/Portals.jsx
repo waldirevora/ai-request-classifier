@@ -7,13 +7,16 @@ import {
   reasonLabels,
 } from "./portal-api.js";
 import App from "./App.jsx";
-import Landing, { FirstSteps } from "./Landing.jsx";
+import AnalysisJourney from "./AnalysisJourney.jsx";
+import { submissionFor } from "./analysis-client.js";
+import Landing, { FirstSteps, HeroPreview } from "./Landing.jsx";
 import { enterLaboratory } from "./lab-entry.js";
 import { LabGuide } from "./LabGuide.jsx";
 import { WorkPanel, OperationalReports } from "./Operations.jsx";
 import ProcessEducation from "./ProcessEducation.jsx";
 import "./portals.css";
 import "./onboarding.css";
+import "./commercial.css";
 
 const categories = {
   suporte_ti: "Suporte de TI",
@@ -42,6 +45,14 @@ export default function Portals() {
   const [sessionExpired, setSessionExpired] = useState(false);
   const [retryAt, setRetryAt] = useState(null);
   const [who, setWho] = useState(null);
+  const [technical, setTechnical] = useState(false);
+  const [presentation, setPresentation] = useState(null);
+  const submission = useRef(null);
+  useEffect(() => {
+    portalApi("lab", "/presentation")
+      .then(setPresentation)
+      .catch(() => setPresentation(null));
+  }, []);
   const [actors, setActors] = useState([]);
   const [clock, setClock] = useState(null);
   const [ready, setReady] = useState(false);
@@ -192,7 +203,7 @@ export default function Portals() {
         setNotice(
           resumed
             ? "Demonstração retomada. Seus pedidos e o relógio foram mantidos."
-            : "Sua demonstração gratuita está pronta. Comece pelo cenário automático.",
+            : "Sua demonstração está pronta. Comece pelo Exemplo de TI ou descreva um pedido fictício.",
         );
       });
     } finally {
@@ -250,20 +261,60 @@ export default function Portals() {
       await refresh(person);
     });
   }
+  useEffect(() => {
+    if (!selected || !["queued", "running"].includes(selected.analysis_status))
+      return;
+    let active = true,
+      timer,
+      count = 0;
+    const poll = async () => {
+      try {
+        const next = await portalApi(context, `/cases/${selected.id}`);
+        if (!active) return;
+        setSelected((current) => (current?.id === next.id ? next : current));
+        if (!["queued", "running"].includes(next.analysis_status)) {
+          await refresh();
+          return;
+        }
+        if (++count < 60) timer = setTimeout(poll, 600);
+        else
+          setNotice(
+            "O pedido continua salvo e em processamento. Atualize a tela para acompanhar; não é necessário reenviar.",
+          );
+      } catch (error) {
+        if (active)
+          setError(
+            "Não foi possível acompanhar a análise. O pedido foi recebido; consulte a lista antes de reenviar.",
+          );
+      }
+    };
+    timer = setTimeout(poll, 600);
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [selected?.id, selected?.analysis_status, context]);
   async function create(e) {
     e.preventDefault();
     await run(async () => {
+      submission.current = submissionFor(draft, submission.current);
       const record = await call("/cases", {
         method: "POST",
-        body: { ...draft, client_key: crypto.randomUUID(), mode: "simulacao" },
+        headers: { Prefer: "respond-async" },
+        body: submission.current.body,
       });
+      if (!record?.id)
+        throw new Error(
+          "Não foi possível confirmar o envio. Consulte a lista antes de reenviar.",
+        );
+      submission.current = null;
       setDraft({ titulo: "", descricao: "" });
-      await refresh();
       setSelected(record);
       setPage("portal");
       setNotice(
-        "Solicitação registrada. Acompanhe o encaminhamento e o histórico abaixo.",
+        "Recebemos sua solicitação. O pedido foi salvo; agora vamos acompanhar a análise da descrição.",
       );
+      await refresh();
     });
   }
   if (classic)
@@ -320,15 +371,13 @@ export default function Portals() {
               disabled={busy}
               onClick={startLab}
             >
-              {busy
-                ? "Preparando demonstração…"
-                : "Explorar demonstração gratuita"}
+              {busy ? "Preparando demonstração…" : "Iniciar demonstração"}
             </button>
           )}
           <span className="badge">
             {context === "lab"
-              ? "Laboratório · Simulação sem custos"
-              : "Ambiente local · Cadastro em simulação"}
+              ? "IA real · Atendimento demonstrativo"
+              : "Solução corporativa personalizada"}
           </span>
           <label>
             Tema
@@ -345,6 +394,12 @@ export default function Portals() {
         </div>
       </header>
       <main id="portal-content" className="sf-main" tabIndex={-1}>
+        {presentation?.test_mode && (
+          <div className="callout warning" role="note">
+            Ambiente de testes automatizados: respostas da IA são mocks, sem
+            chamadas externas.
+          </div>
+        )}
         {error && (
           <div className="callout error" role="alert">
             <div>
@@ -390,17 +445,17 @@ export default function Portals() {
         {!ready ? (
           <p role="status">Verificando sessão…</p>
         ) : !who ? (
-          <section className="sf-welcome">
+          <section className="sf-welcome sf-commercial-hero">
             <div>
-              <p className="eyebrow">INTELIGÊNCIA COM CONTROLE</p>
+              <p className="eyebrow">IA E AUTOMAÇÃO PARA PROCESSOS INTERNOS</p>
               <h1>
-                Do pedido à resolução.
-                <br />
-                Cada etapa, visível.
+                Sua empresa recebe solicitações. Mas consegue acompanhar todas
+                até a resolução?
               </h1>
               <p>
-                Classificação assistida, destino validado por regras e
-                acompanhamento pelo departamento responsável.
+                Organize solicitações internas, utilize inteligência artificial
+                para identificar o departamento responsável e acompanhe prazos,
+                atendimentos e resultados em um único fluxo.
               </p>
               <div className="sf-hero-actions">
                 <button
@@ -411,99 +466,23 @@ export default function Portals() {
                   {busy
                     ? "Preparando demonstração…"
                     : sessionExpired
-                      ? "Iniciar nova demonstração gratuita"
-                      : "Explorar demonstração gratuita"}
+                      ? "Iniciar nova demonstração"
+                      : "Experimentar o SolicitaFlow"}
                 </button>
-                <a className="button secondary" href="#local-login">
-                  Tenho acesso aos portais
+                <a className="button secondary" href="#como-funciona">
+                  Entenda como funciona
                 </a>
               </div>
               <p className="field-help">
-                Sem senha · Empresa fictícia · Sem créditos de IA
+                Sem login · Empresa fictícia · Análise real com limites de uso
+              </p>
+              <p className="field-help">
+                Uma demonstração profissional de uma solução que pode ser
+                personalizada para sua empresa.
               </p>
               <FirstSteps />
-              <a className="sf-journey-link" href="#como-funciona">
-                Conhecer a jornada ↓
-              </a>
             </div>
-            {context === "lab" ? (
-              <section id="local-login" tabIndex={-1} className="card sf-form">
-                <h2>
-                  {sessionExpired
-                    ? "Sua sessão de demonstração encerrou."
-                    : "Demonstração gratuita"}
-                </h2>
-                <p>
-                  Por segurança, uma sessão expirada não recupera o laboratório
-                  anterior. Você pode iniciar outra demonstração independente,
-                  sujeita à cota de novas criações, ou acessar seus portais
-                  locais.
-                </p>
-                <button
-                  className="button primary"
-                  onClick={startLab}
-                  disabled={busy}
-                >
-                  Iniciar nova demonstração
-                </button>
-              </section>
-            ) : (
-              <form
-                id="local-login"
-                tabIndex={-1}
-                className="card sf-form"
-                onSubmit={authenticate}
-              >
-                <p className="eyebrow">PARA QUEM JÁ TEM UMA CONTA</p>
-                <h2>Acessar portais locais</h2>
-                <p>
-                  Use a conta fornecida pelo responsável pelo ambiente. O acesso
-                  depende do seu perfil e das suas permissões.
-                </p>
-                <label>
-                  Usuário
-                  <input
-                    autoComplete="username"
-                    required
-                    value={login.username}
-                    onChange={(e) =>
-                      setLogin({ ...login, username: e.target.value })
-                    }
-                  />
-                </label>
-                <label>
-                  Senha
-                  <input
-                    type="password"
-                    autoComplete="current-password"
-                    required
-                    value={login.password}
-                    onChange={(e) =>
-                      setLogin({ ...login, password: e.target.value })
-                    }
-                  />
-                </label>
-                <button className="button primary" disabled={busy}>
-                  {busy ? "Entrando…" : "Entrar"}
-                </button>
-                <aside className="sf-login-help">
-                  <strong>Está conhecendo o produto?</strong>
-                  <p>
-                    Você não precisa de usuário ou senha. Explore a demonstração
-                    gratuita e alterne entre Colaborador, Departamento e Central
-                    em um ambiente fictício isolado.
-                  </p>
-                  <button
-                    type="button"
-                    className="button secondary"
-                    onClick={startLab}
-                    disabled={busy}
-                  >
-                    Explorar sem senha
-                  </button>
-                </aside>
-              </form>
-            )}
+            <HeroPreview />
           </section>
         ) : (
           <>
@@ -605,8 +584,9 @@ export default function Portals() {
                   />
                 </label>
                 <p className="field-help">
-                  Modo determinístico: não envia dados à DeepSeek. A prioridade
-                  utiliza a matriz Python.
+                  A descrição será enviada à DeepSeek pelo backend, dentro dos
+                  limites de uso. Utilize somente dados fictícios. A prioridade
+                  será calculada por regras Python.
                 </p>
                 <button className="button primary" disabled={busy}>
                   {busy ? "Registrando e classificando…" : "Enviar solicitação"}
@@ -716,11 +696,20 @@ export default function Portals() {
                       <p className="field-help">
                         Recebida em {format(selected.created_at)}
                       </p>
+                      <AnalysisJourney
+                        record={selected}
+                        departments={departments}
+                        testMode={presentation?.test_mode}
+                      />
                       <div className="sf-result">
                         <h3>
                           {selected.source === "simulacao"
-                            ? "Sugestão simulada"
-                            : "Sugestão original da IA"}
+                            ? "Sugestão simulada histórica"
+                            : !selected.request.categoria_sugerida
+                              ? "Nenhuma sugestão de IA disponível"
+                              : presentation?.test_mode
+                                ? "Sugestão do mock (teste)"
+                                : "Sugestão original da DeepSeek"}
                         </h3>
                         <dl>
                           <dt>Categoria</dt>
@@ -987,7 +976,80 @@ export default function Portals() {
             )}
           </>
         )}
-        {ready && !who && <Landing onExplore={startLab} busy={busy} />}
+
+        {ready && !who && (
+          <>
+            {sessionExpired && (
+              <div className="callout warning" role="status">
+                <strong>Sua sessão de demonstração encerrou.</strong>
+                <p>
+                  Por segurança, não recuperamos o laboratório anterior após
+                  expirar. Inicie outra demonstração independente, sujeita aos
+                  limites de uso.
+                </p>
+              </div>
+            )}
+            <Landing
+              onExplore={startLab}
+              busy={busy}
+              contactUrl={presentation?.contact_url}
+            />
+            <details
+              className="sf-technical-access"
+              open={technical}
+              onToggle={(e) => setTechnical(e.currentTarget.open)}
+            >
+              <summary>Acesso técnico aos portais</summary>
+              <p>
+                Área secundária para quem já recebeu uma conta local. Visitantes
+                podem usar a demonstração sem credenciais.
+              </p>
+              {context !== "local" ? (
+                <button
+                  className="button secondary"
+                  onClick={() => changeContext("local")}
+                >
+                  Abrir acesso local
+                </button>
+              ) : (
+                <form
+                  id="local-login"
+                  className="card sf-form"
+                  onSubmit={authenticate}
+                >
+                  <h2>Acessar portais locais</h2>
+                  <label>
+                    Usuário
+                    <input
+                      autoComplete="username"
+                      required
+                      value={login.username}
+                      onChange={(e) =>
+                        setLogin({ ...login, username: e.target.value })
+                      }
+                    />
+                  </label>
+                  <label>
+                    Senha
+                    <input
+                      type="password"
+                      autoComplete="current-password"
+                      required
+                      value={login.password}
+                      onChange={(e) =>
+                        setLogin({ ...login, password: e.target.value })
+                      }
+                    />
+                  </label>
+                  <button className="button primary" disabled={busy}>
+                    Entrar
+                  </button>
+                </form>
+              )}
+            </details>
+          </>
+        )}
+
         {page === "learn" && (
           <section className="card sf-learning">
             <ProcessEducation />

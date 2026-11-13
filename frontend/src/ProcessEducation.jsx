@@ -5,7 +5,7 @@ export default function ProcessEducation() {
   const [urgency, setUrgency] = useState("alta");
   return (
     <>
-      <p className="eyebrow">COMO FUNCIONA A V2</p>
+      <p className="eyebrow">POR TRÁS DA DEMONSTRAÇÃO</p>
       <h1>Automação com regras. Pessoas nas exceções.</h1>
       <p>
         A classificação sugere um caminho. O backend confere o assunto, as
@@ -22,8 +22,8 @@ export default function ProcessEducation() {
         <li>
           <strong>2. Sugestão estruturada</strong>
           <span>
-            Categoria, impacto, urgência e justificativa. O laboratório usa
-            simulação identificada.
+            Categoria, impacto, urgência e justificativa. A DeepSeek analisa
+            dados fictícios dentro dos limites de uso.
           </span>
         </li>
         <li>

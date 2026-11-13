@@ -36,7 +36,7 @@ def main():
                 conn.execute('GRANT USAGE ON SCHEMA public TO ai_classifier_app')
                 tables=conn.execute("SELECT tablename FROM pg_tables WHERE schemaname='public' AND tablename<>'sf_schema_versions'").fetchall()
                 for (table,) in tables:
-                    grants='SELECT,INSERT' if table=='sf_events' else 'SELECT,INSERT,UPDATE,DELETE'
+                    grants='SELECT,INSERT' if table=='sf_events' else 'SELECT,INSERT,UPDATE' if table in ('sf_ai_attempts','sf_legacy_submissions') else 'SELECT,INSERT,UPDATE,DELETE'
                     conn.execute(sql.SQL('GRANT '+grants+' ON {} TO ai_classifier_app').format(sql.Identifier(table)))
                 conn.execute('GRANT USAGE,SELECT ON ALL SEQUENCES IN SCHEMA public TO ai_classifier_app')
     for value in passwords.values():print('::add-mask::'+value,flush=True)

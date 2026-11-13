@@ -1,3 +1,7 @@
+> Estado atual: **V2.6 com IA real controlada**. As seções históricas abaixo descrevem
+> a recuperação do ambiente. Para orçamento, modo demonstrativo e testes seguros,
+> consulte [V2_6.md](V2_6.md). Não use o roteiro antigo contra o backend real.
+
 # Guia operacional SolicitaFlow
 
 ## Instalação recuperada
@@ -50,7 +54,7 @@ Aplicação não tem TRUNCATE; usuário de testes não tem CONNECT no principal.
 
 O controlador força `SF_SECURE_LEGACY=true`. A IA V2 exige `AI_ENABLED=true`,
 `SF_REAL_AI_ENABLED=true` e chave presente. O segundo controle é false por padrão.
-Todos os formulários V2 usam simulação, mesmo com a integração legada configurada.
+Todos os formulários novos da V2.6 usam DeepSeek real dentro dos limites. Cota ou indisponibilidade preserva o pedido como exceção sem sugestão inventada.
 Testes sempre recebem IA desabilitada e chave fictícia, com transporte bloqueado.
 Não modificar a DeepSeek ou habilitar chamadas pagas para executar o laboratório.
 
@@ -58,7 +62,7 @@ Não modificar a DeepSeek ou habilitar chamadas pagas para executar o laboratór
 
 O botão **Explorar demonstração gratuita** retoma uma sessão válida ou inicia um ambiente fictício independente quando necessário. Trocar
 personagens não autentica usuários reais. O cabeçalho identifica o modo de simulação.
-Cada ambiente admite até 20 pedidos, expira em 24 horas e não usa API paga.
+Cada ambiente admite até 20 pedidos e expira em 24 horas. A análise da V2.6 usa API real, sujeita ao orçamento global.
 Recarregar, retomar ou **Recomeçar roteiro** preserva pedidos, relógio e workspace sem consumir cota de criação. Sessões expiradas não são recuperadas; uma nova entrada explícita cria outro ambiente, sujeita ao limite e ao Retry-After. Veja [V2.5](V2_5.md).
 
 Contas fictícias locais usam senhas geradas. Na instalação recuperada, o arquivo
@@ -100,8 +104,7 @@ cd ~/projects/ai-request-classifier
   --axe ~/.local/share/ai-request-classifier/ux-redesign/tools/node_modules/axe-core/axe.min.js
 ```
 
-Esse teste abre Chromium com sandbox habilitado, cria apenas dados fictícios em
-laboratórios isolados e não chama a DeepSeek. No CI, utiliza o Chrome do runner
+Esse teste só funciona com um backend explicitamente identificado como QA. Use o controlador scripts/qa_local.py descrito em V2_6.md; o serviço principal não aceita regressão automatizada paga. No CI, utiliza o Chrome do runner
 com o mesmo sandbox. Não usar `--no-sandbox` para contornar falhas.
 
 ## Migrações

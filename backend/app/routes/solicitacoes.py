@@ -1,6 +1,7 @@
 """CRUD de solicitações. O POST aciona IA automaticamente quando habilitada."""
-from fastapi import APIRouter, HTTPException, Response, status
+from fastapi import APIRouter, HTTPException, Response, status, Request
 
+import os
 from app.database import conectar
 from app.identity import classic_filter
 from app.schemas import SolicitacaoEntrada
@@ -10,7 +11,10 @@ router = APIRouter(prefix="/solicitacoes", tags=["Solicitações"])
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)
-def criar_solicitacao(dados: SolicitacaoEntrada):
+def criar_solicitacao(dados: SolicitacaoEntrada, request: Request):
+    if os.getenv("SF_SECURE_LEGACY","true").lower()!="false":
+        from app.legacy_ai import create_legacy
+        return create_legacy(dados,request)
     # A transação é confirmada ANTES da chamada externa à IA.
     with conectar() as conn:
         registro = conn.execute(
@@ -59,6 +63,8 @@ def atualizar_solicitacao(id_solicitacao: int, dados: SolicitacaoEntrada):
 @router.delete("/{id_solicitacao}", status_code=status.HTTP_204_NO_CONTENT)
 def excluir_solicitacao(id_solicitacao: int):
     with conectar() as conn:
+        if os.getenv("SF_SECURE_LEGACY","true").lower()!="false" and conn.execute("SELECT 1 FROM sf_legacy_submissions WHERE request_id=%s",(id_solicitacao,)).fetchone():
+            raise HTTPException(409,"O pedido possui histórico de análise e deve ser preservado para auditoria")
         registro = conn.execute(
             "DELETE FROM solicitacoes WHERE id = %s RETURNING id",
             (id_solicitacao,),

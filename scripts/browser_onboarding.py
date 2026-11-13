@@ -5,10 +5,10 @@ exhausting shared local quotas. Authentication fixtures stay in private CLI file
 """
 from pathlib import Path
 from tempfile import TemporaryDirectory
-import json
+import json,os
 from playwright.sync_api import expect
 
-BASE = 'http://127.0.0.1:5173'
+BASE = os.getenv('SF_BROWSER_BASE_URL','http://127.0.0.1:5173')
 HEADERS = {'X-SolicitaFlow-Context': 'lab'}
 
 
@@ -22,7 +22,7 @@ def fit_and_readable(page):
 
 
 def initial_entry(page, context, shot, accessibility, evidence, creation_posts):
-    expect(page.get_by_role('heading', name='Acessar portais locais')).to_be_visible()
+    expect(page.get_by_role('heading',name='Sua empresa recebe solicitações. Mas consegue acompanhar todas até a resolução?')).to_be_visible()
     assert not creation_posts
     for mode in ('light', 'dark'):
         page.get_by_label('Tema da interface').select_option(mode)
@@ -42,7 +42,7 @@ def initial_entry(page, context, shot, accessibility, evidence, creation_posts):
 
     # Two tabs share cookies/locks, not IP identity. Both click while unauthenticated.
     sibling = context.new_page(); sibling.goto(BASE)
-    expect(sibling.get_by_role('heading', name='Acessar portais locais')).to_be_visible()
+    expect(sibling.get_by_role('heading',name='Sua empresa recebe solicitações. Mas consegue acompanhar todas até a resolução?')).to_be_visible()
     sibling.evaluate('''() => {
       window.entryChannel = new BroadcastChannel('sf25-entry-test');
       entryChannel.onmessage = () => document.querySelector('.sf-welcome .button.primary').click();
@@ -59,8 +59,8 @@ def initial_entry(page, context, shot, accessibility, evidence, creation_posts):
     page.reload(); expect(page.get_by_role('heading', name='Portal do Colaborador')).to_be_visible()
     assert len(creation_posts) == 1
     page.get_by_role('button', name='Voltar ao ambiente local', exact=True).click()
-    expect(page.get_by_role('heading', name='Acessar portais locais')).to_be_visible()
-    page.locator('.sf-welcome').get_by_role('button', name='Explorar demonstração gratuita', exact=True).click()
+    expect(page.get_by_role('heading',name='Sua empresa recebe solicitações. Mas consegue acompanhar todas até a resolução?')).to_be_visible()
+    page.locator('.sf-welcome').get_by_role('button', name='Experimentar o SolicitaFlow', exact=True).click()
     expect(page.get_by_role('heading', name='Portal do Colaborador')).to_be_visible()
     assert page.request.get(BASE+'/api/v2/session', headers=HEADERS).json()['workspace_id'] == who['workspace_id']
     assert len(creation_posts) == 1
@@ -83,7 +83,7 @@ def finish_entry_checks(page, browser, context, output, evidence, creation_posts
     # Explicitly simulated UI expiration; never modify a live visitor's DB session.
     context.route('**/api/v2/session', lambda route: route.fulfill(status=401, content_type='application/json', body=json.dumps({'detail':'Sessão expirada. Entre novamente.'})))
     page.reload()
-    expect(page.get_by_role('heading', name='Sua sessão de demonstração encerrou.')).to_be_visible()
+    expect(page.get_by_text('Sua sessão de demonstração encerrou.',exact=True)).to_be_visible()
     assert len(creation_posts) == 1
     context.unroute('**/api/v2/session')
 
@@ -95,7 +95,7 @@ def finish_entry_checks(page, browser, context, output, evidence, creation_posts
     quota_page.route('**/api/v2/lab/start', deny)
     quota_page.goto(BASE)
     for _ in range(2):
-        quota_page.locator('.sf-welcome').get_by_role('button', name='Explorar demonstração gratuita', exact=True).click()
+        quota_page.locator('.sf-welcome').get_by_role('button', name='Experimentar o SolicitaFlow', exact=True).click()
         expect(quota_page.get_by_role('alert')).to_contain_text('Você poderá criar uma nova demonstração às')
     assert len(attempts) == 1
     quota_page.screenshot(path=str(output/'home-mobile-429.png'),full_page=True)
@@ -113,6 +113,7 @@ def authenticated_portal(browser, accounts_path, evidence):
     # The legacy paid path must remain read-only throughout this browser regression.
     context.route('**/api/solicitacoes', lambda route: route.continue_() if route.request.method=='GET' else route.abort())
     page=context.new_page();page.goto(BASE)
+    page.get_by_text('Acesso técnico aos portais',exact=True).click()
     page.get_by_label('Usuário',exact=True).fill(account['username'])
     page.get_by_label('Senha',exact=True).fill(account['password'])
     page.get_by_role('button',name='Entrar',exact=True).click()
@@ -138,7 +139,7 @@ def native_zoom(playwright, channel, output, evidence, lab_cookies, axe):
         page.goto('chrome://settings/appearance')
         page.locator('select#zoomLevel').select_option('2')
         page.goto(BASE)
-        expect(page.get_by_role('heading',name='Acessar portais locais')).to_be_visible()
+        expect(page.get_by_role('heading',name='Sua empresa recebe solicitações. Mas consegue acompanhar todas até a resolução?')).to_be_visible()
         metrics=page.evaluate('({innerWidth,outerWidth,devicePixelRatio})')
         assert metrics['devicePixelRatio']==2 and metrics['innerWidth']==720, metrics
         fit_and_readable(page)

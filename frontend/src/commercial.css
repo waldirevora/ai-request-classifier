@@ -1,0 +1,205 @@
+.sf-commercial-hero {
+  align-items: center;
+  gap: clamp(2rem, 5vw, 4rem);
+  padding-block: 3.5rem 5rem;
+}
+.sf-commercial-hero h1 {
+  max-width: 24ch;
+  font-size: clamp(2.1rem, 3.7vw, 3.5rem);
+  line-height: 1.16;
+}
+.sf-business-preview {
+  padding: 2rem;
+  border: 1px solid var(--line);
+  border-radius: 1.5rem;
+  background: linear-gradient(150deg, var(--surface), var(--accent-soft));
+  box-shadow: var(--shadow);
+}
+.sf-example-message {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1.25rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+}
+.sf-example-message span,
+.sf-preview-analysis span {
+  font-size: var(--font-small);
+  color: var(--muted);
+}
+.sf-preview-connector {
+  text-align: center;
+  font-size: 1.5rem;
+  color: var(--accent);
+  padding: 0.5rem;
+}
+.sf-preview-analysis {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1.25rem;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent);
+  border-radius: 1rem;
+}
+.sf-preview-departments {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.sf-preview-departments > * {
+  padding: 0.75rem 1rem;
+  background: var(--surface);
+  border-radius: 0.75rem;
+  border: 1px solid var(--line);
+  font-size: var(--font-small);
+}
+.sf-preview-departments strong {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.sf-business-preview > .field-help {
+  margin-top: 1.25rem;
+}
+.sf-problem-card {
+  padding: 1.75rem;
+}
+.sf-problem-card h3 {
+  margin-top: 0;
+}
+.sf-transformation {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+.sf-transformation article {
+  padding: 2rem;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background: var(--surface);
+}
+.sf-transformation article:last-child {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+.sf-transformation h3 {
+  font-size: var(--font-card-title);
+}
+.sf-transformation ul {
+  padding-left: 1.25rem;
+  display: grid;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+.sf-tech-explainer,
+.sf-technical-access {
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  background: var(--surface);
+}
+.sf-tech-explainer summary,
+.sf-technical-access summary {
+  cursor: pointer;
+  font-weight: 600;
+  min-height: 2.75rem;
+  display: list-item;
+  align-content: center;
+}
+.sf-tech-explainer > p,
+.sf-technical-access > p {
+  margin: 1rem 0;
+  max-width: 75ch;
+  color: var(--muted);
+}
+.sf-tech-explainer .sf-difference-grid {
+  margin-top: 2rem;
+}
+.sf-centered-actions {
+  justify-content: center;
+}
+.sf-technical-access {
+  margin-top: 2rem;
+  font-size: var(--font-small);
+}
+.sf-technical-access form {
+  max-width: 36rem;
+  margin-top: 1rem;
+}
+.sf-analysis-journey {
+  padding: 1.5rem;
+  border: 1px solid var(--accent);
+  border-radius: 1rem;
+  background: var(--accent-soft);
+  margin-block: 1.5rem;
+}
+.sf-analysis-journey h3 {
+  font-size: var(--font-card-title);
+  margin-block: 0.5rem 1rem;
+}
+.sf-analysis-journey dl {
+  display: grid;
+  grid-template-columns: 8rem minmax(0, 1fr);
+  gap: 0.75rem 1rem;
+  margin-top: 1.25rem;
+}
+.sf-analysis-journey dt {
+  font-weight: 600;
+}
+.sf-analysis-journey dd {
+  margin: 0;
+}
+.sf-analysis-stages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-block: 1.25rem;
+}
+.sf-analysis-stages span {
+  font-size: var(--font-small);
+  padding: 0.5rem 0.75rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 2rem;
+}
+.sf-analysis-stages .complete {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.sf-analysis-stages .current {
+  border-color: var(--blue);
+  color: var(--blue);
+}
+@media (max-width: 800px) {
+  .sf-transformation {
+    grid-template-columns: 1fr;
+  }
+  .sf-commercial-hero {
+    padding-block: 1.5rem 3rem;
+  }
+  .sf-business-preview {
+    padding: 1.5rem;
+  }
+}
+@media (max-width: 500px) {
+  .sf-analysis-journey {
+    padding: 1.25rem;
+  }
+  .sf-analysis-journey dl {
+    grid-template-columns: 1fr;
+    gap: 0.375rem;
+  }
+  .sf-analysis-journey dd {
+    margin-bottom: 0.75rem;
+  }
+  .sf-commercial-hero h1 {
+    font-size: 2.1rem;
+  }
+  .sf-business-preview {
+    padding: 1.25rem;
+  }
+}

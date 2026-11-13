@@ -2,30 +2,32 @@
 
 **Solicitações inteligentes, do pedido à resolução.**
 
-Plataforma de laboratório para gestão de solicitações corporativas: classificação
-assistida, encaminhamento validado, atendimento por departamentos, SLA e relatórios.
-Evolução do **AI Request Classifier**, preservando o mesmo histórico Git e banco.
+Demonstração profissional de uma solução corporativa personalizada com inteligência
+artificial, automação e acompanhamento de solicitações. **Não é um SaaS operado
+continuamente.** A base evolui do AI Request Classifier, preservando histórico e dados.
+
+A V2.6 usa **DeepSeek real** nos novos envios, com orçamento global e limites no
+backend. Empresa, personagens, atendimento e relógio são demonstrativos. Dados
+sensíveis não devem ser enviados. Leia o [contrato V2.6](docs/V2_6.md).
 
 [![Verify SolicitaFlow](https://github.com/waldirevora/solicitaflow/actions/workflows/verify.yml/badge.svg)](https://github.com/waldirevora/solicitaflow/actions/workflows/verify.yml)
 
 ## Experimente localmente
 
 Com os serviços existentes no Ubuntu/WSL em execução, abra
-**http://localhost:5173** e selecione **Explorar demonstração gratuita**. Não precisa de senha,
-cadastro real ou créditos de IA. Cada visitante recebe um ambiente fictício isolado. Uma sessão válida é retomada sem nova criação ao recarregar ou entrar novamente.
+**http://localhost:5173** e selecione **Experimentar o SolicitaFlow**. Não precisa de login ou cadastro pessoal. As chamadas de IA são reais, limitadas e custeadas pelo responsável pela demonstração. Cada visitante recebe um ambiente fictício isolado. Uma sessão válida é retomada sem nova criação ao recarregar ou entrar novamente.
 
-1. Como colaboradora fictícia, envie o **Cenário automático**.
+1. Como colaboradora fictícia, envie o **Exemplo de TI**.
 2. Troque para **Tecnologia**, abra o pedido e assuma o atendimento.
 3. Registre andamento e avance 6 horas: observe o risco de SLA.
 4. Avance mais 8 horas: observe cobrança e escalonamento.
 5. Registre a resolução efetiva pelo departamento.
 6. Volte à colaboradora para conferir a resposta.
 7. Entre como central para consultar pipeline, histórico e relatórios.
-8. Experimente o **Cenário ambíguo** e revise a exceção na central.
+8. Experimente o **Exemplo com dois assuntos** e revise a exceção na central.
 
 A troca de personagens só funciona nesse laboratório. Contas locais têm login
-próprio e autorização no backend. Simulação é identificada; não é uma chamada real
-à DeepSeek. O produto permanece **restrito ao ambiente local**, sem deploy público.
+próprio e autorização no backend. A análise DeepSeek é real; falhas ou cotas são informadas sem resposta inventada. O produto permanece **restrito ao ambiente local**, sem deploy público.
 
 Leia também [V2.5 — primeiro acesso e laboratório](docs/V2_5.md) para conhecer a retomada, os limites e a nova home educativa.
 
@@ -39,6 +41,7 @@ Leia também [V2.5 — primeiro acesso e laboratório](docs/V2_5.md) para conhec
 | V2.3 | Responsável, pipeline, primeira resposta, resolução, SLA e alertas internos |
 | V2.4 | Jornada fictícia isolada, relógio virtual, revisão humana e relatório |
 | V2.5 | Onboarding, sessão retomável, home educativa e tipografia acessível |
+| V2.6 | Portfólio B2B, IA real, reservas globais de custo e progresso auditável |
 
 A IA sugere categoria, impacto e urgência. Python calcula a prioridade pela matriz
 determinística existente. Assuntos inequívocos seguem ao destino ativo; incertezas
@@ -92,10 +95,18 @@ Capturas ficam nos artefatos do workflow, sem credenciais ou dumps.
 ## Documentação
 
 - [Guia operacional](docs/GUIA.md): ambiente, comandos, contas e testes.
-- [Contrato V2](docs/V2.md): roteamento, autorização, pipeline, SLA e limites.
+- [V2.6 e controle de IA](docs/V2_6.md): experiência comercial, limites e testes.
+- [Contrato V2 histórico](docs/V2.md): roteamento, autorização, pipeline, SLA e limites.
 - [Arquitetura](docs/ARQUITETURA.md): componentes, dados e evolução do MVP.
 - [Critérios de classificação](docs/CRITERIOS_CLASSIFICACAO.md): matriz e catálogos.
 - [Segurança e evidências](docs/ENTREGA_V2.md): verificações e pendências.
 
 Nunca versione `.env`, `.env.test`, senhas, chaves, dumps ou backups. Não publique
 a API local diretamente na internet. Render + Neon continuam uma etapa futura.
+
+O teste de navegador agora exige backend de QA com mocks e recusa o serviço real.
+Use `scripts/qa_local.py start`, `scripts/qa_local.py browser` e
+`scripts/qa_local.py stop` com o Python do backend. Isso reinicia somente o banco
+**de testes**, não o principal. Não execute pytest e QA de navegador em paralelo.
+O contato comercial usa apenas `SF_CONTACT_URL` confirmado pelo proprietário;
+nenhum endereço é presumido. Sem esse valor, o botão de contato não é mostrado.

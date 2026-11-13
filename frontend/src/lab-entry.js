@@ -54,7 +54,7 @@ export function nextLabStep(who, records, selected) {
     return "Registre o andamento. Avance 6 horas e depois mais 8 para observar os alertas. Por fim, confirme a resolução.";
   }
   if (!current)
-    return "Comece pelo Cenário automático: confira o exemplo fictício e envie sua primeira solicitação.";
+    return "Comece pelo Exemplo de TI: confira o exemplo fictício e envie sua primeira solicitação.";
   if (current.state === "excecao")
     return "O pedido precisa de esclarecimento. Entre como Central Operacional para revisar a exceção.";
   if (current.state === "resolvida")
