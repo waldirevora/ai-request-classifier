@@ -22,7 +22,7 @@ def test_lab_complete_journey_and_visitor_isolation(portal):
     assert other.get(path).status_code==404
     assert other.get('/v2/cases').json()==[]
     assert client.get('/solicitacoes').status_code==403
-    assert create(client,mode='deepseek').status_code==403
+    assert case['source']=='deepseek'
     switch(client,'suporte_ti')
     assert client.post(path+'/transition',json={'action':'assumir','message':'Equipe fictícia iniciou a investigação.'}).status_code==200
     assert client.post('/v2/lab/advance',json={'hours':6}).status_code==200
@@ -72,14 +72,14 @@ def test_role_switch_rotates_capability_and_cannot_select_other_visitors(portal)
 
 def test_concurrent_submission_creates_one_request_and_one_route(portal,monkeypatch):
     from concurrent.futures import ThreadPoolExecutor
-    from app import portals
+    from app import ia
     from app.routing import simulate
     client,who=start()
     calls=[]
     def classify(*args):
         calls.append(1)
         return simulate(*args)
-    monkeypatch.setattr(portals,'simulate',classify)
+    monkeypatch.setattr(ia,'classificar_solicitacao',classify)
     key=str(uuid4())
     def submit(_):
         isolated=TestClient(app,headers={'X-SolicitaFlow-Context':'lab'},cookies=dict(client.cookies))

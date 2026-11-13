@@ -43,6 +43,8 @@ class ResultadoIA:
     latencia_ms: int
 
 
+MAX_OUTPUT = 400
+
 INSTRUCOES = """Você é um classificador de solicitações internas empresariais.
 Responda APENAS com um objeto JSON contendo as chaves:
 {"categoria":"suporte_ti","impacto":"equipe","urgencia":"alta","justificativa":"Equipe impedida de trabalhar durante o expediente."}
@@ -68,7 +70,7 @@ def classificar_solicitacao(titulo: str, descricao: str) -> ResultadoIA:
         "model": modelo,
         "thinking": {"type": "disabled"},
         "temperature": 0,
-        "max_tokens": 400,
+        "max_tokens": MAX_OUTPUT,
         "response_format": {"type": "json_object"},
         "messages": [
             {"role": "system", "content": INSTRUCOES},
@@ -85,7 +87,7 @@ def classificar_solicitacao(titulo: str, descricao: str) -> ResultadoIA:
     inicio = perf_counter()
     try:
         with urlopen(pedido, timeout=12) as resposta:
-            dados = json.loads(resposta.read().decode("utf-8"))
+            dados = json.loads(resposta.read(262145).decode("utf-8"))
     except HTTPError as exc:
         raise ErroClassificacao(f"http_{exc.code}") from exc
     except (URLError, TimeoutError, OSError) as exc:
@@ -109,7 +111,7 @@ def classificar_solicitacao(titulo: str, descricao: str) -> ResultadoIA:
             urgencia=classificado.urgencia.value,
             prioridade=calcular_prioridade(classificado.impacto, classificado.urgencia).value,
             justificativa=classificado.justificativa,
-            modelo=modelo,
+            modelo=str(dados.get("model") or modelo)[:80],
             tokens_entrada=int(uso.get("prompt_tokens") or 0),
             tokens_saida=int(uso.get("completion_tokens") or 0),
             latencia_ms=latencia_ms,

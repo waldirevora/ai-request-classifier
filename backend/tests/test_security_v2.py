@@ -25,11 +25,14 @@ def test_colleague_cannot_read_or_change_another_request(portal):
     assert client.post('/v2/cases/'+case['id']+'/transition',json={'action':'resolver','message':'Tentativa indevida de resolução.'}).status_code==403
 
 def test_both_flags_are_required_before_real_classification(portal,monkeypatch):
-    from app import portals
+    from app import ia
     client,_,_=portal
     monkeypatch.setenv('SF_REAL_AI_ENABLED','true')
     monkeypatch.setenv('AI_ENABLED','false')
     def forbidden(*_):raise AssertionError('Provider must not be invoked')
-    monkeypatch.setattr(portals,'classificar_solicitacao',forbidden)
+    monkeypatch.setattr(ia,'classificar_solicitacao',forbidden)
     login(client,'colaborador')
-    assert create(client,mode='deepseek').status_code==403
+    response=create(client,mode='deepseek')
+    assert response.status_code==201
+    assert response.json()['analysis_status']=='blocked'
+    assert response.json()['analysis_code']=='ia_desabilitada'

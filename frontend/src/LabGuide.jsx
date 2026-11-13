@@ -59,11 +59,14 @@ export function LabGuide({
     <section className="sf-lab-banner" aria-label="Jornada do laboratório">
       <div className="sf-lab-title">
         <div>
-          <p className="eyebrow">EMPRESA HORIZONTE · DEMONSTRAÇÃO GRATUITA</p>
+          <p className="eyebrow">
+            EMPRESA HORIZONTE · DEMONSTRAÇÃO EMPRESARIAL
+          </p>
           <h2>Você está em um ambiente fictício.</h2>
           <p>
             Seu laboratório é separado do de outros visitantes. Use apenas dados
-            inventados. A classificação é simulada e não consome créditos de IA.
+            inventados. A análise DeepSeek é real, sujeita aos limites.
+            Atendimento, departamentos e relógio são demonstrativos.
           </p>
         </div>
         <span className="badge">
@@ -146,14 +149,14 @@ export function LabGuide({
               disabled={busy}
               onClick={() => fill(LAB_EXAMPLES.clear)}
             >
-              Cenário automático
+              Exemplo de TI
             </button>
             <button
               className="button secondary"
               disabled={busy}
               onClick={() => fill(LAB_EXAMPLES.ambiguous)}
             >
-              Cenário ambíguo
+              Exemplo com dois assuntos
             </button>
           </>
         )}

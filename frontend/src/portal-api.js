@@ -83,3 +83,7 @@ export const slaLabels = {
   resolvido_em_atraso: "Resolvido após o prazo",
   sem_prazo: "Aguardando definição de prazo",
 };
+
+eventLabels.ia_analisando = "IA analisando a descrição";
+eventLabels.ia_concluida = "Análise da IA concluída";
+eventLabels.ia_nao_concluida = "Análise não concluída";
