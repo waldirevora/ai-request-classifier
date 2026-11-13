@@ -7,12 +7,16 @@ a V2 acrescenta roteamento, atendimento, SLA e laboratório de demonstração.
 ## Componentes
 
 - `frontend/src/Portals.jsx`: sessão, navegação e experiências por perfil.
-- `LabGuide.jsx`: personagens fictícios e jornada guiada sem IA externa.
+- `LabGuide.jsx`: personagens e atendimento fictícios; novos pedidos usam IA real controlada.
 - `Operations.jsx`: atendimento, políticas, alertas e relatórios.
 - `ProcessEducation.jsx`: explicação da V2 e matriz determinística interativa.
 - `App.jsx` e `pages/*`: interface clássica preservada, quatro abas.
 - `useTheme.js` e `public/theme-init.js`: preferência automática/clara/escura,
-  persistência local e aplicação inicial antes da renderização.
+  persistência local e aplicação inicial antes da renderização. Sem preferência salva,
+  o padrão é Escuro; Automático salvo continua acompanhando o sistema.
+- `BrandLogo.jsx`: variantes do pacote de marca conforme o tema resolvido.
+- `ai_control.py`: orçamento global persistente, idempotência e concorrência da IA.
+- `legacy_ai.py`: orçamento compartilhado pelo formulário técnico.
 - `backend/app/identity.py`: contas, sessões opacas e autorização por recurso.
 - `portals.py`: cadastro persistente, consultas, departamentos e revisão de exceções.
 - `routing.py`: validação determinística e encaminhamento único com auditoria.
@@ -35,6 +39,9 @@ erDiagram
     SF_CASES ||--o{ SF_EVENTS : historico
     SF_CASES ||--o{ SF_NOTIFICATIONS : alertas_internos
     SF_WORKSPACES ||--o{ SF_SLA_POLICIES : configura
+    SF_WORKSPACES ||--o{ SF_AI_ATTEMPTS : limita_consumo
+    SOLICITACOES ||--o| SF_AI_ATTEMPTS : reserva
+    SF_WORKSPACES ||--o{ SF_LEGACY_SUBMISSIONS : vincula_envios
 ```
 
 As FKs compostas impedem vínculos entre ambientes. O serviço valida workspace,
@@ -59,10 +66,16 @@ Frontend Vite 5173 → proxy `/api` → FastAPI 8000 → PostgreSQL 18 em 5432.
 Todos ficam em loopback no laboratório local. DeepSeek recebe dados somente
 quando o operador habilita explicitamente o fluxo real controlado.
 
-Migrações 001–003 originais permanecem intactas. 004–006 são aditivas e versionadas
+Migrações 001–003 originais permanecem intactas. 004–007 são aditivas e versionadas
 por checksum. A aplicação usa role limitada; o usuário de testes é separado e não
 conecta ao principal. CI provisiona PostgreSQL efêmero, verifica compatibilidade
 com registro legado e executa testes backend/frontend/build/navegador/acessibilidade.
 
-Leia [V2.md](V2.md) para contratos completos, políticas fictícias e controles
-exigidos antes de qualquer futura publicação Render/Neon.
+`/health` é liveness do processo, não comprovação de conexão/schema do banco.
+O proxy `/api` existe no servidor de desenvolvimento Vite e não é parte do bundle.
+O backend mantém origens locais e cookies para uso local. Conexões de runtime e o
+migrador usam advisory locks de sessão: pooling transacional exige revisão.
+
+Leia [V2_6.md](V2_6.md) para orçamento e análise assíncrona, e
+[PRE_DEPLOY.md](PRE_DEPLOY.md) para os bloqueios antes de qualquer publicação.
+[V2.md](V2.md) documenta a evolução histórica e políticas fictícias.
