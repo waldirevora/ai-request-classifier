@@ -57,6 +57,8 @@ def privileges(conn,owner,app='ai_classifier_app',cleaner='ai_classifier_cleanup
             perms='SELECT' if table=='sf_schema_versions' else 'SELECT,INSERT' if table=='sf_events' else 'SELECT,INSERT,UPDATE' if table in ('sf_ai_attempts','sf_legacy_submissions') else 'SELECT,INSERT,UPDATE,DELETE'
             conn.execute(sql.SQL('GRANT '+perms+' ON {} TO {}').format(sql.Identifier(table),sql.Identifier(app)))
             if table!='sf_schema_versions':conn.execute(sql.SQL('GRANT SELECT,DELETE ON {} TO {}').format(sql.Identifier(table),sql.Identifier(cleaner)))
+        # PostgreSQL requires UPDATE on at least one column for SELECT FOR UPDATE.
+        conn.execute(sql.SQL('GRANT UPDATE(name) ON sf_workspaces TO {}').format(sql.Identifier(cleaner)))
         conn.execute(sql.SQL('GRANT UPDATE ON solicitacoes,sf_cases TO {}').format(sql.Identifier(cleaner)))
         conn.execute(sql.SQL('GRANT INSERT ON sf_rate_windows TO {}').format(sql.Identifier(cleaner)))
         conn.execute(sql.SQL('GRANT USAGE,SELECT ON ALL SEQUENCES IN SCHEMA public TO {}').format(sql.Identifier(app)))

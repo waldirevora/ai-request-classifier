@@ -22,6 +22,13 @@ with psycopg.connect(autocommit=True) as conn:
     assert not conn.execute("SELECT has_table_privilege('ai_classifier_app','solicitacoes','TRUNCATE')").fetchone()[0]
     assert not conn.execute("SELECT has_table_privilege('ai_classifier_app','sf_ai_attempts','DELETE')").fetchone()[0]
     assert not conn.execute("SELECT has_table_privilege('ai_classifier_app','sf_events','UPDATE')").fetchone()[0]
+# Exercise the actual limited cleanup role; a fully privileged test role would hide missing row-lock rights.
+sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'backend'))
+from app.retention import cleanup
+from psycopg.rows import dict_row
+with psycopg.connect(autocommit=False,row_factory=dict_row) as conn:
+    conn.execute('SET ROLE ai_classifier_cleanup')
+    assert cleanup(conn)=={'redacted':0,'purged':0}
 with tempfile.TemporaryDirectory() as temp:
     stem=backup(temp)
     os.environ['PGDATABASE']='solicitaflow_restore_test'
