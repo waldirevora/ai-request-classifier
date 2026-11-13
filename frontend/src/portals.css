@@ -20,13 +20,13 @@
   text-decoration: none;
 }
 .sf-brand strong {
-  font-size: 24px;
+  font-size: 1.5rem;
   letter-spacing: -0.7px;
 }
 .sf-brand small {
   display: block;
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--font-small);
   margin-top: 4px;
 }
 .sf-tools {
@@ -38,7 +38,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 13px;
+  font-size: var(--font-body);
 }
 .sf-main {
   max-width: 1400px;
@@ -54,7 +54,7 @@
   padding: 40px 0;
 }
 .sf-welcome h1 {
-  font-size: clamp(36px, 4vw, 60px);
+  font-size: clamp(2.25rem, 4vw, 3.75rem);
   line-height: 1.1;
   letter-spacing: -2px;
 }
@@ -78,7 +78,7 @@
   flex-direction: column;
   gap: 8px;
   font-weight: 600;
-  font-size: 14px;
+  font-size: var(--font-body);
 }
 .sf-form input,
 .sf-form select,
@@ -110,7 +110,7 @@
   margin-bottom: 24px;
 }
 .sf-page-heading h1 {
-  font-size: 34px;
+  font-size: 2.125rem;
   letter-spacing: -1px;
   margin: 8px 0;
 }
@@ -149,7 +149,7 @@
   gap: 12px;
 }
 .sf-metrics strong {
-  font-size: 36px;
+  font-size: 2.25rem;
 }
 .sf-metrics span {
   color: var(--muted);
@@ -203,7 +203,7 @@
   min-width: 0;
 }
 .sf-detail h2 {
-  font-size: 26px;
+  font-size: 1.625rem;
   line-height: 1.4;
   margin: 16px 0;
 }
@@ -246,7 +246,7 @@
 }
 .sf-timeline time {
   display: block;
-  font-size: 12px;
+  font-size: var(--font-small);
   color: var(--muted);
   margin-top: 6px;
 }
@@ -257,7 +257,7 @@
   text-align: center;
   padding: 30px;
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--font-small);
   border-top: 1px solid var(--line);
 }
 .classic-return {
@@ -301,10 +301,10 @@
     gap: 8px;
   }
   .sf-tools .badge {
-    font-size: 10px;
+    font-size: var(--font-small);
   }
   .sf-brand small {
-    font-size: 10px;
+    font-size: var(--font-small);
   }
   .sf-main {
     padding: 24px 16px;
@@ -315,7 +315,7 @@
     gap: 30px;
   }
   .sf-welcome h1 {
-    font-size: 40px;
+    font-size: 2.5rem;
   }
   .sf-form,
   .sf-detail,
@@ -330,10 +330,10 @@
     padding: 16px;
   }
   .sf-metrics strong {
-    font-size: 28px;
+    font-size: 1.75rem;
   }
   .sf-page-heading h1 {
-    font-size: 28px;
+    font-size: 1.75rem;
   }
   .sf-page-heading {
     align-items: flex-start;
@@ -343,13 +343,13 @@
   }
   .sf-tabs button {
     padding: 10px 12px;
-    font-size: 12px;
+    font-size: var(--font-small);
   }
   .sf-result {
     padding: 16px;
   }
   .sf-result dl {
-    font-size: 13px;
+    font-size: var(--font-body);
   }
   .sf-list-heading {
     padding: 20px;
@@ -373,7 +373,7 @@
 .sf-table td {
   padding: 12px;
   border-bottom: 1px solid var(--line);
-  font-size: 13px;
+  font-size: var(--font-body);
 }
 .sf-table caption {
   text-align: left;
@@ -401,7 +401,7 @@
   flex-wrap: wrap;
 }
 .sf-lab-title h2 {
-  font-size: 26px;
+  font-size: 1.625rem;
   letter-spacing: -0.5px;
 }
 .sf-lab-title p {
@@ -423,7 +423,7 @@
 }
 .sf-lab-steps span {
   display: block;
-  font-size: 12px;
+  font-size: var(--font-small);
   color: var(--muted);
   margin-top: 6px;
 }
@@ -438,7 +438,7 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  font-size: 13px;
+  font-size: var(--font-body);
 }
 .sf-lab-controls select {
   max-width: 100%;
@@ -459,7 +459,7 @@
     padding: 12px;
   }
   .sf-lab-title h2 {
-    font-size: 22px;
+    font-size: 1.375rem;
   }
   .sf-lab-controls {
     align-items: stretch;
@@ -474,7 +474,7 @@
     flex-wrap: wrap;
   }
   .sf-header .button {
-    font-size: 12px;
+    font-size: var(--font-small);
   }
 }
 

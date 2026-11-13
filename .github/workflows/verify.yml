@@ -63,6 +63,7 @@ jobs:
           PGUSER: ai_classifier_app
           PGPASSWORD: ${{ env.SF_APP_PASSWORD }}
         run: |
+          python scripts/seed_local.py
           (cd backend && python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 > "$RUNNER_TEMP/backend.log" 2>&1) &
           (cd frontend && npm run dev -- --host 127.0.0.1 > "$RUNNER_TEMP/frontend.log" 2>&1) &
           python scripts/wait_local.py

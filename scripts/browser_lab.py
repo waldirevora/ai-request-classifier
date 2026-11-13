@@ -3,16 +3,18 @@ Usage: browser-venv/bin/python scripts/browser_lab.py --output /tmp/solicitaflow
 """
 from pathlib import Path
 from uuid import uuid4
-import argparse,json
+import argparse,json,re
+from browser_onboarding import initial_entry,finish_entry_checks,authenticated_portal,native_zoom,fit_and_readable
 from playwright.sync_api import sync_playwright,expect
 
-def run(output,axe,channel=None):
+def run(output,axe,channel=None,accounts=None):
     output.mkdir(parents=True,exist_ok=True)
     evidence={'steps':[],'axe':[],'screenshots':[]}
     with sync_playwright() as playwright:
         browser=playwright.chromium.launch(chromium_sandbox=True,channel=channel)
         context=browser.new_context(viewport={'width':1440,'height':1000})
-        page=context.new_page();errors=[]
+        page=context.new_page();errors=[];creation_posts=[]
+        context.on('request',lambda request:creation_posts.append(request.url) if request.method=='POST' and request.url.endswith('/api/v2/lab/start') else None)
         page.on('pageerror',lambda error:errors.append(str(error)))
         def shot(name):
             page.screenshot(path=str(output/(name+'.png')),full_page=True);evidence['screenshots'].append(name+'.png')
@@ -30,9 +32,9 @@ def run(output,axe,channel=None):
             page.get_by_role('button',name=title,exact=False).click()
             expect(page.get_by_role('heading',name=title,exact=True)).to_be_visible()
         page.goto('http://127.0.0.1:5173/')
-        page.get_by_role('button',name='Explorar laboratório',exact=True).click()
+        initial_entry(page,context,shot,accessibility,evidence,creation_posts)
         expect(page.get_by_role('heading',name='Portal do Colaborador')).to_be_visible()
-        expect(page.get_by_label('Personagem fictício')).to_be_enabled()
+        expect(page.get_by_label('Personagem fictício',exact=True)).to_be_enabled()
         page.get_by_role('button',name='Cenário automático',exact=True).click()
         page.get_by_role('button',name='Enviar solicitação',exact=True).click()
         title='Servidor indisponível para a equipe'
@@ -47,7 +49,11 @@ def run(output,axe,channel=None):
         page.emulate_media(color_scheme='light');expect(page.locator('html')).to_have_attribute('data-theme','light')
         page.emulate_media(color_scheme='dark');expect(page.locator('html')).to_have_attribute('data-theme','dark')
         page.keyboard.press('Tab');assert page.evaluate('document.activeElement !== document.body')
-        switch('suporte_ti');open_case(title)
+        page.get_by_role('button',name=re.compile('Entrar como Departamento')).click()
+        expect(page.get_by_label('Personagem fictício',exact=True)).to_have_value('suporte_ti')
+        page.reload();expect(page.get_by_role('heading',name='Portal do Departamento')).to_be_visible()
+        assert len(creation_posts)==1
+        open_case(title)
         page.get_by_label('Registro de atendimento').fill('Equipe fictícia assume a investigação do servidor.')
         page.get_by_role('button',name='Assumir atendimento',exact=True).click()
         expect(page.get_by_role('button',name='Registrar andamento')).to_be_visible()
@@ -73,7 +79,9 @@ def run(output,axe,channel=None):
         page.get_by_label('Tema da interface').select_option('light');shot('lab-collaborator-resolved-mobile-light')
         for width in (768,1440):
             page.set_viewport_size({'width':width,'height':1000});assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
-        switch('central');page.get_by_role('button',name='SLA e relatórios',exact=True).click()
+        page.get_by_role('button',name=re.compile('Entrar como Central Operacional')).click()
+        expect(page.get_by_label('Personagem fictício',exact=True)).to_have_value('central')
+        page.get_by_role('button',name='SLA e relatórios',exact=True).click()
         expect(page.get_by_role('table')).to_be_visible();shot('lab-central-reports-desktop')
         evidence['steps']+=['collaborator reads response','central reports and history']
         switch('colaborador');page.get_by_role('button',name='Cenário ambíguo',exact=True).click()
@@ -91,7 +99,7 @@ def run(output,axe,channel=None):
         expect(page.get_by_text('Revisão humana registrada',exact=True)).to_be_visible();shot('lab-central-exception-reviewed')
         evidence['steps']+=['ambiguous request','human exception review','original suggestion preserved']
         visitor=browser.new_context();other=visitor.new_page();other.goto('http://127.0.0.1:5173/')
-        other.get_by_role('button',name='Explorar laboratório',exact=True).click()
+        other.locator('.sf-welcome').get_by_role('button',name='Explorar demonstração gratuita',exact=True).click()
         expect(other.get_by_role('heading',name='Portal do Colaborador')).to_be_visible()
         assert other.request.get('http://127.0.0.1:5173/api/v2/cases/'+case_id,headers={'X-SolicitaFlow-Context':'lab'}).status==404
         assert other.request.get('http://127.0.0.1:5173/api/v2/cases',headers={'X-SolicitaFlow-Context':'local'}).status==401
@@ -103,12 +111,16 @@ def run(output,axe,channel=None):
         page.get_by_label('Impacto educativo',exact=False).select_option('empresa')
         page.get_by_label('Urgência educativa',exact=False).select_option('media')
         expect(page.locator('output')).to_contain_text('alta')
+        finish_entry_checks(page,browser,context,output,evidence,creation_posts)
+        authenticated_portal(browser,accounts,evidence)
+        native_zoom(playwright,channel,output,evidence,context.cookies(),axe)
         assert not errors,errors
+        evidence['lab_creation_posts_in_primary_browser']=len(creation_posts)
         evidence.update(passed=True,widths=[1440,768,390],themes=['light','dark','auto-live'],js_errors=errors,paid_calls=0)
         (output/'browser-lab.json').write_text(json.dumps(evidence,indent=2,ensure_ascii=False))
         browser.close()
         print('Browser lab passed:',len(evidence['steps']),'steps; themes, responsive, accessibility, isolation and no paid calls.')
 
 if __name__=='__main__':
-    parser=argparse.ArgumentParser();parser.add_argument('--output',type=Path,default=Path('/tmp/solicitaflow-captures'));parser.add_argument('--axe',type=Path);parser.add_argument('--channel',choices=['chrome','msedge'])
-    args=parser.parse_args();run(args.output,args.axe,args.channel)
+    parser=argparse.ArgumentParser();parser.add_argument('--output',type=Path,default=Path('/tmp/solicitaflow-captures'));parser.add_argument('--axe',type=Path);parser.add_argument('--channel',choices=['chrome','msedge']);parser.add_argument('--accounts',type=Path,default=Path.home()/'.local/share/ai-request-classifier/solicitaflow-v2/local-accounts.json')
+    args=parser.parse_args();run(args.output,args.axe,args.channel,args.accounts)

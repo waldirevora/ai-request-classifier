@@ -1,0 +1,524 @@
+/* V2.5: shared type tokens live in styles.css; this file defines onboarding layout. */
+.sf-header {
+  flex-wrap: wrap;
+}
+.sf-brand {
+  flex: 1 1 22rem;
+  min-width: 0;
+}
+.sf-tools {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  min-width: 0;
+}
+.sf-brand small {
+  font-size: var(--font-small);
+  line-height: 1.5;
+}
+.sf-main {
+  width: 100%;
+}
+.sf-welcome {
+  gap: clamp(2rem, 5vw, 5rem);
+  align-items: start;
+  padding-block: 2.5rem 4rem;
+}
+.sf-welcome h1 {
+  max-width: 14ch;
+  letter-spacing: -0.04em;
+  font-size: clamp(2.25rem, 4vw, 3.75rem);
+  line-height: 1.13;
+}
+.sf-welcome > div > p:not(.eyebrow):not(.field-help) {
+  font-size: var(--font-lead);
+  line-height: 1.75;
+  max-width: 52ch;
+}
+.sf-hero-actions {
+  display: flex;
+  gap: 0.875rem;
+  flex-wrap: wrap;
+  margin-top: 2rem;
+}
+.sf-hero-actions .button {
+  text-decoration: none;
+}
+.sf-welcome .field-help {
+  margin-block: 1rem;
+}
+.sf-journey-link {
+  display: inline-block;
+  margin-top: 1rem;
+  color: var(--accent);
+  font-weight: 600;
+  text-underline-offset: 0.25rem;
+}
+.sf-first-steps {
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.75rem;
+  margin-block: 1.75rem;
+}
+.sf-first-steps li {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  font-size: var(--font-small);
+  color: var(--muted);
+}
+.sf-first-steps li > span {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 1.6rem;
+  height: 1.6rem;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-radius: 50%;
+  font-weight: 700;
+}
+.sf-login-help {
+  padding: 1.25rem;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  background: var(--surface-alt);
+}
+.sf-login-help p {
+  margin-block: 0.5rem 1rem;
+  font-size: var(--font-small);
+}
+#local-login {
+  scroll-margin-top: 2rem;
+  min-width: 0;
+}
+.sf-landing {
+  border-top: 1px solid var(--line);
+}
+.sf-product-section {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: clamp(2rem, 5vw, 5rem);
+  padding-block: clamp(3rem, 6vw, 5.5rem);
+  border-bottom: 1px solid var(--line);
+}
+.sf-section-stack {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2rem;
+}
+.sf-section-intro {
+  max-width: 65ch;
+}
+.sf-section-intro h2 {
+  font-size: clamp(1.75rem, 3vw, 2.5rem);
+  line-height: 1.25;
+  letter-spacing: -0.03em;
+  margin-block: 0.75rem 1rem;
+}
+.sf-section-intro p:not(.eyebrow) {
+  font-size: var(--font-lead);
+  line-height: 1.75;
+  color: var(--muted);
+}
+.sf-section-intro p + p {
+  margin-top: 0.875rem;
+}
+.sf-flow-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  padding: 2rem;
+  border: 1px solid var(--line);
+  border-radius: 1.25rem;
+  background: var(--surface);
+  text-align: center;
+}
+.sf-flow-preview span:not([aria-hidden]) {
+  font-size: var(--font-body);
+}
+.sf-flow-preview [aria-hidden] {
+  color: var(--accent);
+}
+.sf-flow-preview strong {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-radius: 0.75rem;
+  padding: 0.875rem 1rem;
+  width: 100%;
+}
+.sf-journey-grid {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+.sf-journey-grid li {
+  padding: 1.75rem;
+}
+.sf-step-number {
+  display: inline-grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-radius: 0.75rem;
+  font-weight: 700;
+  font-size: var(--font-small);
+}
+.sf-journey-grid h3,
+.sf-audience-grid h3,
+.sf-difference-grid h3 {
+  font-size: var(--font-card-title);
+  line-height: 1.4;
+  margin-block: 1rem 0.75rem;
+}
+.sf-journey-grid p,
+.sf-audience-grid p,
+.sf-difference-grid p {
+  line-height: 1.75;
+  color: var(--muted);
+}
+.sf-audience-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+.sf-audience-grid article {
+  padding: 1.75rem;
+}
+.sf-audience-grid h3 {
+  margin-top: 0;
+}
+.sf-audience-grid .sf-audience-benefit {
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--line);
+  font-size: var(--font-small);
+  color: var(--accent);
+}
+.sf-difference-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2rem 3rem;
+}
+.sf-difference-grid article {
+  display: flex;
+  align-items: start;
+  gap: 1rem;
+}
+.sf-difference-grid h3 {
+  margin-top: 0;
+}
+.sf-check {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 700;
+}
+.sf-demo-cta {
+  margin-block: 4rem 1rem;
+  padding: clamp(2rem, 5vw, 4rem);
+  border-radius: 1.5rem;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent);
+  text-align: center;
+}
+.sf-demo-cta h2 {
+  font-size: clamp(1.75rem, 3vw, 2.5rem);
+  line-height: 1.3;
+  max-width: 24ch;
+  margin: 0.75rem auto 1.25rem;
+  letter-spacing: -0.03em;
+}
+.sf-demo-cta > p {
+  max-width: 65ch;
+  margin-inline: auto;
+}
+.sf-demo-promises {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem 1.5rem;
+  list-style: none;
+  padding: 0;
+  margin: 1.5rem 0;
+  font-size: var(--font-small);
+  font-weight: 600;
+}
+.sf-demo-promises li::before {
+  content: "✓ ";
+  color: var(--accent);
+}
+.sf-demo-cta .field-help {
+  margin-top: 1rem;
+}
+.sf-faq {
+  display: grid;
+  gap: 0.875rem;
+  max-width: 58rem;
+}
+.sf-faq details {
+  border: 1px solid var(--line);
+  border-radius: 0.875rem;
+  background: var(--surface);
+}
+.sf-faq summary {
+  cursor: pointer;
+  font-weight: 600;
+  padding: 1.25rem 1.5rem;
+  min-height: 3rem;
+}
+.sf-faq details p {
+  padding: 0 1.5rem 1.5rem;
+  max-width: 75ch;
+  color: var(--muted);
+}
+.sf-character-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin-block: 1.5rem;
+}
+.sf-character {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1.25rem;
+  text-align: left;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: 0.875rem;
+  color: var(--text);
+  min-width: 0;
+}
+.sf-character.active {
+  border: 2px solid var(--accent);
+  padding: calc(1.25rem - 1px);
+}
+.sf-character strong {
+  font-size: var(--font-card-title);
+}
+.sf-character > span {
+  font-size: var(--font-small);
+  line-height: 1.6;
+  color: var(--muted);
+}
+.sf-character .sf-role-label {
+  color: var(--accent);
+  font-weight: 600;
+}
+.sf-next-step {
+  border-left: 0.25rem solid var(--accent);
+  background: var(--surface);
+  padding: 1rem 1.25rem;
+  margin-block: 1.5rem;
+  border-radius: 0 0.75rem 0.75rem 0;
+}
+.sf-next-step p {
+  margin-block: 0.5rem;
+}
+.sf-guide-details {
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+.sf-guide-details summary {
+  cursor: pointer;
+  padding: 0.5rem 0;
+  font-weight: 600;
+  min-height: 2.75rem;
+}
+.sf-guide-details > p {
+  max-width: 80ch;
+  margin-block: 1rem;
+}
+.sf-lab-controls {
+  align-items: end;
+}
+.sf-lab-controls label {
+  flex: 1 1 18rem;
+  max-width: 30rem;
+  min-width: 0;
+}
+.sf-lab-controls select {
+  width: 100%;
+}
+.sf-list-item {
+  overflow-wrap: anywhere;
+  gap: 0.75rem;
+}
+.sf-list-item small {
+  font-size: var(--font-small);
+}
+.sf-result dl {
+  gap: 1rem;
+}
+.sf-result dd {
+  overflow-wrap: anywhere;
+}
+.sf-timeline p {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin-block: 0.5rem;
+}
+.sf-timeline time {
+  font-size: var(--font-small);
+}
+.sf-table caption {
+  font-size: var(--font-card-title);
+}
+.sf-table th,
+.sf-table td {
+  font-size: var(--font-small);
+  line-height: 1.6;
+}
+.sf-result .sf-form {
+  padding: 1rem 0;
+}
+.sf-tools select,
+.sf-list-heading select {
+  padding: 0.625rem;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--input-line);
+}
+@media (max-width: 1100px) {
+  .sf-header {
+    padding: 1.25rem 1.5rem;
+  }
+  .sf-brand {
+    flex-basis: 100%;
+  }
+  .sf-tools {
+    justify-content: flex-start;
+    width: 100%;
+  }
+  .sf-welcome {
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+  }
+  .sf-workspace.has-detail {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .sf-workspace.has-detail .sf-list {
+    display: none;
+  }
+}
+@media (max-width: 800px) {
+  .sf-welcome,
+  .sf-product-section {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .sf-journey-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .sf-audience-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .sf-character-cards {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .sf-character {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    column-gap: 1rem;
+  }
+  .sf-character .sf-role-label {
+    grid-column: 1;
+  }
+  .sf-character strong {
+    grid-column: 1;
+  }
+  .sf-character > span:last-child {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+}
+@media (max-width: 500px) {
+  .sf-header {
+    padding: 1.25rem 1rem;
+  }
+  .sf-main {
+    padding: 1.5rem 1rem;
+  }
+  .sf-brand {
+    flex-basis: auto;
+  }
+  .sf-brand small {
+    font-size: var(--font-small);
+  }
+  .sf-tools {
+    gap: 0.875rem;
+    align-items: stretch;
+  }
+  .sf-tools > .button {
+    width: 100%;
+  }
+  .sf-tools .badge {
+    flex: 1 1 8rem;
+    align-self: center;
+  }
+  .sf-tools label {
+    margin-left: auto;
+  }
+  .sf-welcome {
+    padding-block: 1rem 2.5rem;
+  }
+  .sf-hero-actions {
+    flex-direction: column;
+  }
+  .sf-journey-grid,
+  .sf-difference-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .sf-journey-grid li,
+  .sf-audience-grid article {
+    padding: 1.5rem;
+  }
+  .sf-lab-banner {
+    padding: 1.25rem;
+  }
+  .sf-lab-controls button {
+    flex: 1 1 12rem;
+  }
+  .sf-character {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .sf-character > span:last-child {
+    grid-column: 1;
+    grid-row: auto;
+  }
+  .sf-character strong {
+    font-size: 1.125rem;
+  }
+  .sf-page-heading {
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  .sf-page-heading h1 {
+    font-size: 1.75rem;
+  }
+  .sf-detail,
+  .sf-learning,
+  .sf-form {
+    padding: 1.25rem;
+  }
+  .sf-result dl {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.375rem;
+  }
+  .sf-result dd {
+    margin-bottom: 0.75rem;
+  }
+  .sf-form h2 {
+    overflow-wrap: anywhere;
+  }
+}

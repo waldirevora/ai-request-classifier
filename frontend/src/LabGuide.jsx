@@ -1,4 +1,7 @@
 import React from "react";
+import { nextLabStep } from "./lab-entry.js";
+import { FirstSteps } from "./Landing.jsx";
+
 export const LAB_EXAMPLES = {
   clear: {
     titulo: "Servidor indisponível para a equipe",
@@ -11,6 +14,24 @@ export const LAB_EXAMPLES = {
       "A equipe fictícia relata uma falha no servidor e também uma fatura de pagamento incorreta. Ainda não está claro qual assunto precisa ser tratado primeiro.",
   },
 };
+const roles = [
+  [
+    "colaborador",
+    "Colaborador",
+    "Cria solicitações, acompanha o destino e confere a resposta.",
+  ],
+  [
+    "departamento",
+    "Departamento",
+    "Recebe o pedido, assume o atendimento e confirma a resolução.",
+  ],
+  [
+    "central",
+    "Central Operacional",
+    "Acompanha SLA, esclarece exceções e consulta relatórios.",
+  ],
+];
+
 export function LabGuide({
   who,
   actors,
@@ -19,42 +40,71 @@ export function LabGuide({
   fill,
   busy,
   clock,
+  records,
+  selected,
+  restart,
 }) {
+  const request =
+    selected ||
+    records.find((r) => r.department_id && r.state !== "resolvida") ||
+    records[0];
+  const department =
+    actors.find(
+      (a) =>
+        a.role === "departamento" && a.department_id === request?.department_id,
+    ) ||
+    actors.find((a) => a.username === "suporte_ti") ||
+    actors.find((a) => a.role === "departamento");
   return (
     <section className="sf-lab-banner" aria-label="Jornada do laboratório">
       <div className="sf-lab-title">
         <div>
-          <p className="eyebrow">EMPRESA HORIZONTE · FICTÍCIA</p>
-          <h2>Explore o fluxo de ponta a ponta.</h2>
+          <p className="eyebrow">EMPRESA HORIZONTE · DEMONSTRAÇÃO GRATUITA</p>
+          <h2>Você está em um ambiente fictício.</h2>
           <p>
-            Dados isolados por visitante. Simulação determinística, sem chamadas
-            ou custos de API.
+            Seu laboratório é separado do de outros visitantes. Use apenas dados
+            inventados. A classificação é simulada e não consome créditos de IA.
           </p>
         </div>
         <span className="badge">
           {clock
             ? new Date(clock).toLocaleString("pt-BR")
-            : "Relógio exclusivo deste laboratório"}
+            : "Relógio da demonstração"}
         </span>
       </div>
-      <ol className="sf-lab-steps">
-        <li>
-          <strong>1. Colaborador</strong>
-          <span>Cadastre e acompanhe.</span>
-        </li>
-        <li>
-          <strong>2. Departamento</strong>
-          <span>Assuma e registre andamento.</span>
-        </li>
-        <li>
-          <strong>3. Relógio</strong>
-          <span>Simule risco e atraso de SLA.</span>
-        </li>
-        <li>
-          <strong>4. Resolução</strong>
-          <span>Responda e confira o histórico.</span>
-        </li>
-      </ol>
+      <div
+        className="sf-character-cards"
+        aria-label="Escolha seu personagem fictício"
+      >
+        {roles.map(([id, title, text]) => {
+          const target =
+            id === "departamento"
+              ? department?.username
+              : actors.find((a) => a.role === id)?.username;
+          return (
+            <button
+              key={id}
+              className={
+                who.role === id ? "sf-character active" : "sf-character"
+              }
+              aria-pressed={who.role === id}
+              disabled={busy || !target}
+              onClick={() => switchActor(target)}
+            >
+              <span className="sf-role-label">
+                {who.role === id ? "Personagem ativo" : "Entrar como"}
+              </span>
+              <strong>{title}</strong>
+              <span>{text}</span>
+            </button>
+          );
+        })}
+      </div>
+      <div className="sf-next-step">
+        <strong>Seu próximo passo</strong>
+        <p>{nextLabStep(who, records, selected)}</p>
+        <span className="field-help">Você está como {who.display_name}.</span>
+      </div>
       <div className="sf-lab-controls">
         <label>
           Personagem fictício
@@ -71,20 +121,24 @@ export function LabGuide({
             ))}
           </select>
         </label>
-        <button
-          className="button secondary"
-          disabled={busy}
-          onClick={() => advance(6)}
-        >
-          Avançar 6 horas
-        </button>
-        <button
-          className="button secondary"
-          disabled={busy}
-          onClick={() => advance(8)}
-        >
-          Avançar 8 horas
-        </button>
+        {who.role !== "colaborador" && (
+          <>
+            <button
+              className="button secondary"
+              disabled={busy}
+              onClick={() => advance(6)}
+            >
+              Avançar 6 horas
+            </button>
+            <button
+              className="button secondary"
+              disabled={busy}
+              onClick={() => advance(8)}
+            >
+              Avançar 8 horas
+            </button>
+          </>
+        )}
         {who.role === "colaborador" && (
           <>
             <button
@@ -104,12 +158,23 @@ export function LabGuide({
           </>
         )}
       </div>
-      <p className="field-help">
-        Comece pelo cenário automático. Após assumir no departamento Tecnologia,
-        avance 6 horas para risco e mais 8 horas para atraso e escalonamento.
-        Registre a resolução, volte à colaboradora e depois consulte a central.
-        No cenário ambíguo, a central esclarece o destino.
-      </p>
+      <details className="sf-guide-details">
+        <summary>Ver o roteiro e recomeçar a orientação</summary>
+        <FirstSteps />
+        <p>
+          Após assumir no departamento, registre andamento, avance 6 horas para
+          ver risco de SLA e mais 8 para atraso e escalonamento. Registre a
+          resolução e confira a resposta como Colaborador e os indicadores como
+          Central.
+        </p>
+        <p>
+          Recomeçar volta ao personagem Colaborador e ao início do roteiro. Seus
+          pedidos e o relógio são mantidos; nenhum laboratório novo é criado.
+        </p>
+        <button className="button secondary" onClick={restart} disabled={busy}>
+          Recomeçar roteiro
+        </button>
+      </details>
     </section>
   );
 }

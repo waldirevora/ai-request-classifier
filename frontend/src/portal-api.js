@@ -1,14 +1,29 @@
+export function parseRetryAfter(value, now = Date.now()) {
+  if (value == null) return null;
+  const text = value.trim();
+  if (/^\d+$/.test(text)) return now + Number(text) * 1000;
+  const timestamp = Date.parse(text);
+  return Number.isFinite(timestamp) ? Math.max(now, timestamp) : null;
+}
+
 export async function portalApi(context, path, options = {}) {
-  const response = await fetch(`/api/v2${path}`, {
-    ...options,
-    credentials: "same-origin",
-    headers: {
-      "Content-Type": "application/json",
-      "X-SolicitaFlow-Context": context,
-      ...options.headers,
-    },
-    body: options.body ? JSON.stringify(options.body) : undefined,
-  });
+  let response;
+  try {
+    response = await fetch(`/api/v2${path}`, {
+      ...options,
+      credentials: "same-origin",
+      headers: {
+        "Content-Type": "application/json",
+        "X-SolicitaFlow-Context": context,
+        ...options.headers,
+      },
+      body: options.body ? JSON.stringify(options.body) : undefined,
+    });
+  } catch {
+    throw new Error(
+      "Não foi possível conectar ao SolicitaFlow. Verifique a conexão e tente novamente.",
+    );
+  }
   const data = response.status === 204 ? null : await response.json();
   if (!response.ok) {
     const error = new Error(
@@ -17,6 +32,7 @@ export async function portalApi(context, path, options = {}) {
         : "Confira os campos e tente novamente.",
     );
     error.status = response.status;
+    error.retryAt = parseRetryAfter(response.headers?.get("Retry-After"));
     throw error;
   }
   return data;
