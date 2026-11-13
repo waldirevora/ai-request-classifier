@@ -200,3 +200,24 @@ def test_cleanup_keeps_current_budget_and_unknown_consumption(portal):
         assert cleanup(conn)['purged']==0
         assert conn.execute('SELECT count(*) n FROM sf_ai_attempts WHERE workspace_id=%s',(old,)).fetchone()['n']==1
         assert conn.execute('SELECT count FROM sf_rate_windows WHERE key=%s',(marker,)).fetchone()['count']==25
+
+
+def test_readiness_uses_client_tls_at_neon_proxy_boundary(monkeypatch):
+    from types import SimpleNamespace
+    from app.cloud import readiness
+    root=Path(__file__).resolve().parents[1]
+    checks=[{'version':f.name,'sha256':hashlib.sha256(f.read_bytes()).hexdigest()} for f in (root/'sql').glob('00[1-7]_*.sql')]
+    class Connection:
+        pgconn=SimpleNamespace(ssl_in_use=True)
+        def __enter__(self):return self
+        def __exit__(self,*args):pass
+        def execute(self,query):
+            if 'current_user AS role' in query:return SimpleNamespace(fetchone=lambda:{'role':'ai_classifier_app','version':18})
+            if 'FROM sf_schema_versions' in query:return SimpleNamespace(fetchall=lambda:checks)
+            if 'information_schema.columns' in query:return SimpleNamespace(fetchone=lambda:{'n':22})
+            if 'has_table_privilege' in query:return SimpleNamespace(fetchone=lambda:{'bad':False})
+            raise AssertionError('Unexpected SQL')
+    conn=Connection();monkeypatch.setattr('app.database.conectar',lambda:conn)
+    assert readiness(PublicSettings(ORIGIN)).status_code==200
+    conn.pgconn.ssl_in_use=False
+    assert readiness(PublicSettings(ORIGIN)).status_code==503

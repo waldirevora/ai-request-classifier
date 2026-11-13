@@ -83,8 +83,8 @@ def readiness(settings):
     try:
         from app.database import conectar
         with conectar() as conn:
-            row=conn.execute("SELECT current_user AS role,current_setting('server_version_num')::int/10000 AS version,(SELECT ssl FROM pg_stat_ssl WHERE pid=pg_backend_pid()) AS tls").fetchone()
-            if row['version']!=18 or (settings.require_tls and (not row['tls'] or row['role']!='ai_classifier_app')):raise ValueError('Database identity')
+            row=conn.execute("SELECT current_user AS role,current_setting('server_version_num')::int/10000 AS version").fetchone()
+            if row['version']!=18 or (settings.require_tls and (not conn.pgconn.ssl_in_use or row['role']!='ai_classifier_app')):raise ValueError('Database identity')
             versions={v['version']:v['sha256'] for v in conn.execute('SELECT version,sha256 FROM sf_schema_versions').fetchall()}
             for file in (Path(__file__).resolve().parents[1]/'sql').glob('00[1-7]_*.sql'):
                 if versions.get(file.name)!=hashlib.sha256(file.read_bytes()).hexdigest():raise ValueError('Schema mismatch')
