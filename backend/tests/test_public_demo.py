@@ -221,3 +221,12 @@ def test_readiness_uses_client_tls_at_neon_proxy_boundary(monkeypatch):
     assert readiness(PublicSettings(ORIGIN)).status_code==200
     conn.pgconn.ssl_in_use=False
     assert readiness(PublicSettings(ORIGIN)).status_code==503
+
+
+def test_endpoint_failure_returns_safe_json_and_no_implementation_details(public,monkeypatch):
+    client,_=public
+    def down(*args,**kwargs):raise RuntimeError('PRIVATE_ERROR_DETAILS')
+    monkeypatch.setattr('app.laboratory.seed',down)
+    response=client.post('/api/v2/lab/start',json={})
+    assert response.status_code==503 and response.headers['content-type']=='application/json'
+    assert 'PRIVATE' not in response.text and 'reenviar' in response.json()['detail']

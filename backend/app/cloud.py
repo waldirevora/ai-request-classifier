@@ -68,8 +68,8 @@ class Security:
                 with conectar() as conn:allowed=rate_limit(conn,'public-http:'+scope['client'][0],1200)
                 if not allowed:return await deny(429,'Muitas operações nesta rede. Aguarde a próxima hora.')
             return await self.app(scope,receive,secured)
-        except Exception:
-            logging.getLogger('solicitaflow').warning('request_unavailable')
+        except Exception as error:
+            logging.getLogger('solicitaflow').warning('request_unavailable type=%s sqlstate=%s',type(error).__name__,getattr(error,'sqlstate','-'))
             if response_started:return
             return await deny(503,'Serviço temporariamente indisponível. O pedido pode ter sido salvo; consulte antes de reenviar.')
 
@@ -104,6 +104,10 @@ def create_public_app(settings=None):
     @outer.get('/ready')
     def ready():return readiness(settings)
     api=create_api(public=True)
+    async def api_failure(request,error):
+        logging.getLogger('solicitaflow').warning('api_unavailable type=%s sqlstate=%s',type(error).__name__,getattr(error,'sqlstate','-'))
+        return JSONResponse({'detail':'Serviço temporariamente indisponível. Consulte seu pedido antes de reenviar.'},503,headers={'Retry-After':'30'})
+    api.add_exception_handler(Exception,api_failure)
     @api.get('/ready')
     def api_ready():return readiness(settings)
     @outer.get('/')
