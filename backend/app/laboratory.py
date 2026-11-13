@@ -7,7 +7,7 @@ from fastapi import APIRouter, Request, Response, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from app.database import conectar
-from app.identity import actor, context, rate_limit, issue_session, public_actor
+from app.identity import session_cookie,actor, context, rate_limit, issue_session, public_actor
 from app.bootstrap import seed
 from app.workflow import ensure_policies, evaluate, now_for
 
@@ -48,7 +48,10 @@ def start(request: Request, response: Response):
             headers={"Retry-After": str(seconds)},
         )
 
+    from app.retention import activity,admit_lab
+    activity()
     with conectar() as conn:
+        admit_lab(conn)
         workspace, _ = seed(
             conn, "lab", "Visitante · Empresa Horizonte fictícia",
             now + timedelta(hours=24),
@@ -88,7 +91,7 @@ def switch(data: Switch, request: Request, response: Response, who=Depends(actor
             raise HTTPException(404, "Personagem fictício não encontrado neste laboratório")
         issue_session(conn, target, response, "lab")
         conn.execute("DELETE FROM sf_sessions WHERE token_hash=%s", (
-            hashlib.sha256(request.cookies["sf_lab"].encode()).hexdigest(),
+            hashlib.sha256(request.cookies[session_cookie('lab')].encode()).hexdigest(),
         ))
     return public_actor(target)
 

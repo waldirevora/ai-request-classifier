@@ -7,6 +7,7 @@ PROMPT_*.md
 .env-*
 !.env.example
 !.env.test.example
+!.env.production.example
 *.pem
 *.key
 local-accounts.json
@@ -46,3 +47,6 @@ dumps/
 
 # Editor
 .vscode/
+
+# Encrypted operational backup bundles and keys stay outside Git
+*.fernet

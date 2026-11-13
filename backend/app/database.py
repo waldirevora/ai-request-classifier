@@ -11,12 +11,16 @@ load_dotenv(
 )
 
 
-def conectar():
-    return psycopg.connect(
+def conectar(**overrides):
+    parameters = dict(
         host=os.environ["PGHOST"],
         port=int(os.environ["PGPORT"]),
         dbname=os.environ["PGDATABASE"],
         user=os.environ["PGUSER"],
         password=os.environ["PGPASSWORD"],
-        row_factory=dict_row
+        row_factory=dict_row,
+        connect_timeout=10,
     )
+    if os.getenv('SF_ENV')=='production':parameters['options']='-c statement_timeout=10000 -c lock_timeout=3000'
+    parameters.update(overrides)
+    return psycopg.connect(**parameters)

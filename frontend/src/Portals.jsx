@@ -29,7 +29,10 @@ const categories = {
 const format = (value) =>
   value ? new Date(value).toLocaleString("pt-BR") : "Ainda não registrado";
 
+const publicSite = document.documentElement.dataset.publicDemo === "true";
+
 function readContext() {
+  if (publicSite) return "lab";
   try {
     const value = sessionStorage.getItem("sf-context");
     return ["local", "lab"].includes(value) ? value : null;
@@ -52,6 +55,7 @@ export default function Portals() {
     if (technical) technicalLogin.current?.focus();
   }, [technical]);
   const [presentation, setPresentation] = useState(null);
+  const publicDemo = publicSite || presentation?.public_demo === true;
   const submission = useRef(null);
   useEffect(() => {
     portalApi("lab", "/presentation")
@@ -125,7 +129,12 @@ export default function Portals() {
         }
         if (!active) return;
         setWho(null);
-        if (error.status === 401 && context === "lab") setSessionExpired(true);
+        if (
+          error.status === 401 &&
+          context === "lab" &&
+          /expir/i.test(error.message)
+        )
+          setSessionExpired(true);
         if (error.status !== 401) setError(error.message);
       } finally {
         if (active && !transferred) setReady(true);
@@ -363,9 +372,18 @@ export default function Portals() {
           {context === "lab" ? (
             <button
               className="button secondary"
-              onClick={() => changeContext("local")}
+              onClick={() => {
+                if (publicDemo) {
+                  setWho(null);
+                  setSelected(null);
+                  setPage("portal");
+                  setError("");
+                } else changeContext("local");
+              }}
             >
-              Voltar ao ambiente local
+              {publicDemo
+                ? "Voltar à apresentação"
+                : "Voltar ao ambiente local"}
             </button>
           ) : (
             <button
@@ -996,56 +1014,58 @@ export default function Portals() {
               busy={busy}
               contactUrl={presentation?.contact_url}
             />
-            <section
-              id="local-technical-access"
-              className="sf-technical-access"
-              aria-label="Acesso local autenticado"
-              hidden={!technical}
-            >
-              {context !== "local" ? (
-                <button
-                  className="button secondary"
-                  onClick={() => changeContext("local")}
-                >
-                  Abrir acesso local
-                </button>
-              ) : (
-                <form
-                  id="local-login"
-                  className="card sf-form"
-                  onSubmit={authenticate}
-                >
-                  <h2>Acessar portais locais</h2>
-                  <label>
-                    Usuário
-                    <input
-                      ref={technicalLogin}
-                      autoComplete="username"
-                      required
-                      value={login.username}
-                      onChange={(e) =>
-                        setLogin({ ...login, username: e.target.value })
-                      }
-                    />
-                  </label>
-                  <label>
-                    Senha
-                    <input
-                      type="password"
-                      autoComplete="current-password"
-                      required
-                      value={login.password}
-                      onChange={(e) =>
-                        setLogin({ ...login, password: e.target.value })
-                      }
-                    />
-                  </label>
-                  <button className="button primary" disabled={busy}>
-                    Entrar
+            {!publicDemo && (
+              <section
+                id="local-technical-access"
+                className="sf-technical-access"
+                aria-label="Acesso local autenticado"
+                hidden={!technical}
+              >
+                {context !== "local" ? (
+                  <button
+                    className="button secondary"
+                    onClick={() => changeContext("local")}
+                  >
+                    Abrir acesso local
                   </button>
-                </form>
-              )}
-            </section>
+                ) : (
+                  <form
+                    id="local-login"
+                    className="card sf-form"
+                    onSubmit={authenticate}
+                  >
+                    <h2>Acessar portais locais</h2>
+                    <label>
+                      Usuário
+                      <input
+                        ref={technicalLogin}
+                        autoComplete="username"
+                        required
+                        value={login.username}
+                        onChange={(e) =>
+                          setLogin({ ...login, username: e.target.value })
+                        }
+                      />
+                    </label>
+                    <label>
+                      Senha
+                      <input
+                        type="password"
+                        autoComplete="current-password"
+                        required
+                        value={login.password}
+                        onChange={(e) =>
+                          setLogin({ ...login, password: e.target.value })
+                        }
+                      />
+                    </label>
+                    <button className="button primary" disabled={busy}>
+                      Entrar
+                    </button>
+                  </form>
+                )}
+              </section>
+            )}
           </>
         )}
 
@@ -1056,9 +1076,10 @@ export default function Portals() {
         )}
       </main>
       <footer className="sf-footer">
-        SolicitaFlow · Laboratório local · Decisões rastreáveis, dados fictícios
-        · Sem publicação na internet
-        {ready && !who && (
+        {publicDemo
+          ? "SolicitaFlow · Portfólio B2B · Empresa e atendimento fictícios · IA real sujeita a cotas"
+          : "SolicitaFlow · Laboratório local · Decisões rastreáveis, dados fictícios · Sem publicação na internet"}
+        {ready && !who && !publicDemo && (
           <button
             type="button"
             className="sf-technical-link"

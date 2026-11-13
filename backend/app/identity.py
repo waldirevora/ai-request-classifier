@@ -30,6 +30,9 @@ def rate_limit(conn,key,limit=30,*,now=None):
     if count>limit: return False
     return True
 
+def session_cookie(kind):
+    return ('__Host-' if os.getenv('SF_ENV')=='production' else '')+'sf_'+kind
+
 def issue_session(conn,account,response,kind):
     now=datetime.now(timezone.utc)
     expiry=now+timedelta(hours=2 if kind=='lab' else 8)
@@ -41,11 +44,11 @@ def issue_session(conn,account,response,kind):
     token=secrets.token_urlsafe(32)
     conn.execute('INSERT INTO sf_sessions(token_hash,workspace_id,account_id,expires_at) VALUES(%s,%s,%s,%s)',
         (hashlib.sha256(token.encode()).hexdigest(),account['workspace_id'],account['id'],expiry))
-    response.set_cookie('sf_'+kind,token,httponly=True,samesite='strict',secure=False,max_age=math.ceil((expiry-now).total_seconds()),path='/')
+    response.set_cookie(session_cookie(kind),token,httponly=True,samesite='strict',secure=os.getenv('SF_ENV')=='production',max_age=math.ceil((expiry-now).total_seconds()),path='/')
 
 def actor(request: Request):
     kind=context(request)
-    token=request.cookies.get('sf_'+kind,'')
+    token=request.cookies.get(session_cookie(kind),'')
     if len(token)<30 or len(token)>100: raise HTTPException(401,'Entre para continuar')
     with conectar() as conn:
         who=conn.execute('''SELECT a.*,w.kind,w.expires_at AS workspace_expires FROM sf_sessions s

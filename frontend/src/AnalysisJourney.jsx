@@ -1,5 +1,9 @@
 import React from "react";
 export const analysisMessages = {
+  consumo_pendente:
+    "Uma análise anterior precisa de conferência pelo responsável. Este pedido foi salvo sem uma nova chamada paga.",
+  laboratorio_expirado:
+    "Este laboratório expirou e a análise não será repetida.",
   ia_desabilitada: "A análise está desabilitada neste ambiente.",
   chave_ausente: "O serviço de IA está sem configuração disponível.",
   modelo_nao_aprovado:
