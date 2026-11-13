@@ -42,10 +42,22 @@ Leia também [V2.5 — primeiro acesso e laboratório](docs/V2_5.md) para conhec
 | V2.4 | Jornada fictícia isolada, relógio virtual, revisão humana e relatório |
 | V2.5 | Onboarding, sessão retomável, home educativa e tipografia acessível |
 | V2.6 | Portfólio B2B, IA real, reservas globais de custo e progresso auditável |
+| V2.6.1 | Marca própria, favicons, FAQ centralizado e tema inicial Escuro |
 
 A IA sugere categoria, impacto e urgência. Python calcula a prioridade pela matriz
 determinística existente. Assuntos inequívocos seguem ao destino ativo; incertezas
 e falhas ficam na fila de exceções. A sugestão original é preservada.
+
+## Baseline para a próxima fase
+
+A V2.6.1 corresponde ao merge `8acaf71` (PR #14). A consolidação posterior corrige
+exemplos, documentação e a dependência de testes; não é um deploy nem migra o banco.
+Veja a [auditoria e os bloqueios de publicação](docs/PRE_DEPLOY.md). A tag `v2.6.1`,
+quando presente, identifica o commit da versão, não o baseline posterior de preparação.
+
+Os templates `backend/.env.example` e `backend/.env.test.example` usam porta 5432 e
+roles limitadas distintas. Copie-os apenas para uma instalação nova; não sobrescreva
+credenciais locais já existentes. Ambos deixam chamadas reais de IA desabilitadas.
 
 ## Stack e execução
 
@@ -78,6 +90,7 @@ backend/.venv/bin/python scripts/local_services.py stop
 
 ```bash
 backend/.venv/bin/python scripts/local_services.py test
+export PATH="$HOME/.local/opt/ai-request-classifier/node/bin:$PATH"
 cd frontend
 npm ci
 npm test
@@ -95,6 +108,8 @@ Capturas ficam nos artefatos do workflow, sem credenciais ou dumps.
 ## Documentação
 
 - [Guia operacional](docs/GUIA.md): ambiente, comandos, contas e testes.
+- [Consolidação pré-deploy](docs/PRE_DEPLOY.md): branches, arquivos legados, segurança e viabilidade.
+- [V2.6.1](docs/V2_6_1.md): marca, FAQ e preferência inicial Escuro.
 - [V2.6 e controle de IA](docs/V2_6.md): experiência comercial, limites e testes.
 - [Contrato V2 histórico](docs/V2.md): roteamento, autorização, pipeline, SLA e limites.
 - [Arquitetura](docs/ARQUITETURA.md): componentes, dados e evolução do MVP.

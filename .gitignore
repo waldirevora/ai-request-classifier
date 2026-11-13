@@ -1,18 +1,48 @@
 # Documentos internos
 PROMPT_*.md
 
-#Credenciais e configuracoes privadas
+# Credenciais e configurações privadas (somente templates sem segredos são permitidos)
 .env
 .env.*
+.env-*
 !.env.example
+!.env.test.example
+*.pem
+*.key
+local-accounts.json
+qa-accounts.json
 
 # Python
 .venv/
 __pycache__/
 *.pyc
+.pytest_cache/
+.coverage
+htmlcov/
 
-# React
+# Frontend e relatórios gerados
 node_modules/
+dist/
+coverage/
+playwright-report/
+test-results/
+
+# Bancos, backups e artefatos operacionais locais
+backups/
+dumps/
+*.dump
+*.backup
+*.pgdump
+*.bundle
+*.private
+*_dump.sql
+*.sql.gz
+*.sql.xz
+*.sqlite
+*.sqlite3
+*.db
+*.log
+*.pid
 
 # Editor
 .vscode/

@@ -1,4 +1,4 @@
-> Estado atual: **V2.6 com IA real controlada**. As seções históricas abaixo descrevem
+> Estado atual: **V2.6.1 com IA real controlada e tema inicial Escuro**. As seções históricas abaixo descrevem
 > a recuperação do ambiente. Para orçamento, modo demonstrativo e testes seguros,
 > consulte [V2_6.md](V2_6.md). Não use o roteiro antigo contra o backend real.
 
@@ -56,12 +56,18 @@ O controlador força `SF_SECURE_LEGACY=true`. A IA V2 exige `AI_ENABLED=true`,
 `SF_REAL_AI_ENABLED=true` e chave presente. O segundo controle é false por padrão.
 Todos os formulários novos da V2.6 usam DeepSeek real dentro dos limites. Cota ou indisponibilidade preserva o pedido como exceção sem sugestão inventada.
 Testes sempre recebem IA desabilitada e chave fictícia, com transporte bloqueado.
-Não modificar a DeepSeek ou habilitar chamadas pagas para executar o laboratório.
+Na demonstração normal, novos envios podem consumir créditos quando os dois flags
+estão habilitados. Para testes automatizados, use somente pytest ou o backend QA
+com mocks; nunca habilite transporte pago para executar a regressão.
+
+Os templates versionados usam porta 5432, role `ai_classifier_app` e, separadamente,
+`ai_classifier_test`. A role `postgres` não é o usuário de runtime. Não copiar um
+.env novo sobre a instalação recuperada. Veja [PRE_DEPLOY.md](PRE_DEPLOY.md).
 
 ## Contas e laboratório
 
-O botão **Explorar demonstração gratuita** retoma uma sessão válida ou inicia um ambiente fictício independente quando necessário. Trocar
-personagens não autentica usuários reais. O cabeçalho identifica o modo de simulação.
+O botão **Experimentar o SolicitaFlow** retoma uma sessão válida ou inicia um ambiente fictício independente quando necessário. Trocar
+personagens não autentica usuários reais. O cabeçalho diferencia IA real e atendimento demonstrativo.
 Cada ambiente admite até 20 pedidos e expira em 24 horas. A análise da V2.6 usa API real, sujeita ao orçamento global.
 Recarregar, retomar ou **Recomeçar roteiro** preserva pedidos, relógio e workspace sem consumir cota de criação. Sessões expiradas não são recuperadas; uma nova entrada explícita cria outro ambiente, sujeita ao limite e ao Retry-After. Veja [V2.5](V2_5.md).
 
@@ -99,18 +105,20 @@ Para repetir o teste de navegador com as ferramentas já instaladas:
 
 ```bash
 cd ~/projects/ai-request-classifier
-~/.local/share/ai-request-classifier/browser-venv/bin/python scripts/browser_lab.py \
-  --output /tmp/solicitaflow-captures \
-  --axe ~/.local/share/ai-request-classifier/ux-redesign/tools/node_modules/axe-core/axe.min.js
+backend/.venv/bin/python scripts/qa_local.py start
+backend/.venv/bin/python scripts/qa_local.py browser
+backend/.venv/bin/python scripts/qa_local.py stop
 ```
 
-Esse teste só funciona com um backend explicitamente identificado como QA. Use o controlador scripts/qa_local.py descrito em V2_6.md; o serviço principal não aceita regressão automatizada paga. No CI, utiliza o Chrome do runner
+Esse controlador verifica o banco de testes, limpa somente seus dados e usa mocks
+nas portas 18000/5174. Não executar em paralelo ao pytest. O teste recusa o backend
+principal real. No CI, utiliza o Chrome do runner
 com o mesmo sandbox. Não usar `--no-sandbox` para contornar falhas.
 
 ## Migrações
 
 001, 002 e 003 pertencem ao MVP e já estão aplicadas nesta instalação. Não reaplicar
-sem conferir o catálogo. A V2 aplicou 004, 005 e 006, registradas em
+sem conferir o catálogo. A evolução V2 aplicou 004, 005, 006 e 007, registradas em
 `sf_schema_versions` com checksum. A tabela original continua com 22 colunas.
 
 Para conferir por uma conexão administrativa local autorizada, somente leitura:
